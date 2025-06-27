@@ -1,0 +1,30 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Backend (HTTPS)",
+			"type": "shell",
+			"command": "cd c:\\Users\\v_dva\\OneDrive\\Desktop\\Auction\\CarAuction\\src\\CarAuction.API && dotnet run --launch-profile https",
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": true
+		},
+		{
+			"label": "Run Frontend",
+			"type": "shell",
+			"command": "cd c:\\Users\\v_dva\\OneDrive\\Desktop\\Auction\\CarAuction\\src\\carauction.web && npm start",
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": true
+		},
+		{
+			"label": "Run Full Stack",
+			"dependsOn": ["Run Backend (HTTPS)", "Run Frontend"],
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

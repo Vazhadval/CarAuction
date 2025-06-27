@@ -1,0 +1,15 @@
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.csproj.AssemblyReference.cache
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.AssemblyInfoInputs.cache
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.AssemblyInfo.cs
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.csproj.CoreCompileInputs.cache
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\bin\Debug\net9.0\CarAuction.Application.deps.json
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\bin\Debug\net9.0\CarAuction.Application.dll
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\bin\Debug\net9.0\CarAuction.Application.pdb
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\bin\Debug\net9.0\CarAuction.Domain.dll
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\bin\Debug\net9.0\CarAuction.Domain.pdb
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAucti.D9227A94.Up2Date
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.dll
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\refint\CarAuction.Application.dll
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\CarAuction.Application.pdb
+C:\Users\v_dva\OneDrive\Desktop\Auction\CarAuction\src\CarAuction.Application\obj\Debug\net9.0\ref\CarAuction.Application.dll
