@@ -1,5 +1,5 @@
 // API Configuration based on environment
-const isDevelopment = false;
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export const API_CONFIG = {
   BASE_URL: isDevelopment 
