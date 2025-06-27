@@ -4,3 +4,6 @@ CarAuction/src/CarAuction.API/obj/
 CarAuction/src/CarAuction.Domain/obj/
 CarAuction/src/CarAuction.Infrastructure/bin/
 CarAuction/src/CarAuction.Infrastructure/obj/
+CarAuction/src/CarAuction.Application/bin/
+CarAuction/src/CarAuction.Application/obj/
+CarAuction/src/CarAuction.Domain/bin/
