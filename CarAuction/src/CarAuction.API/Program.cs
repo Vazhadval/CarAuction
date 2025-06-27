@@ -92,15 +92,12 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-// Only use Swagger in Development environment
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Remove HTTPS redirection for shared hosting (SmarterASP.NET handles SSL)
 // app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseCors("AllowAll");
 
@@ -115,11 +112,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        
+
         // Test database connection first
         logger.LogInformation("Testing database connection...");
         if (await context.Database.CanConnectAsync())
@@ -127,7 +124,7 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Database connection successful. Running migrations...");
             await context.Database.MigrateAsync();
             logger.LogInformation("Database migrations completed successfully.");
-            
+
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
@@ -171,7 +168,7 @@ using (var scope = app.Services.CreateScope())
                     logger.LogError("Failed to create admin user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
             }
-            
+
             logger.LogInformation("Application initialization completed successfully.");
         }
         else
