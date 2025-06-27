@@ -82,9 +82,16 @@ namespace CarAuction.Application.Services
                 }
                 else if (car.Status == CarStatus.OngoingAuction && now >= car.AuctionEndDate)
                 {
-                    car.Status = car.Bids.Any() ? CarStatus.Sold : CarStatus.NotSold;
+                    var highestBid = car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault();
+                    car.Status = highestBid != null ? CarStatus.Sold : CarStatus.NotSold;
                     updated = true;
                     Console.WriteLine($"Bulk update: Car {car.Id} transitioning to {car.Status} at {now}");
+                    
+                    // If there's a winner, notify them
+                    if (highestBid != null && car.Status == CarStatus.Sold)
+                    {
+                        await NotifyAuctionWinner(highestBid.BidderId, car.Id, $"{car.Name} {car.Model}", highestBid.Amount);
+                    }
                 }
                 
                 if (updated)
@@ -121,9 +128,16 @@ namespace CarAuction.Application.Services
             }
             else if (car.Status == CarStatus.OngoingAuction && now >= endDate)
             {
-                car.Status = car.Bids.Any() ? CarStatus.Sold : CarStatus.NotSold;
+                var highestBid = car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault();
+                car.Status = highestBid != null ? CarStatus.Sold : CarStatus.NotSold;
                 needsUpdate = true;
                 Console.WriteLine($"Transitioning car {car.Id} from OngoingAuction to {car.Status} at {now}");
+                
+                // If there's a winner, notify them
+                if (highestBid != null && car.Status == CarStatus.Sold)
+                {
+                    await NotifyAuctionWinner(highestBid.BidderId, car.Id, $"{car.Name} {car.Model}", highestBid.Amount);
+                }
             }
             
             if (needsUpdate)
@@ -153,6 +167,32 @@ namespace CarAuction.Application.Services
             {
                 // Log but don't throw to prevent service disruption
                 Console.WriteLine($"Failed to notify of status change: {ex.Message}");
+            }
+            
+            return Task.CompletedTask;
+        }
+
+        private Task NotifyAuctionWinner(string winnerId, int carId, string carName, decimal winningBid)
+        {
+            try
+            {
+                // This would normally be done through an event/messaging system
+                // For now, just log the winner notification
+                Console.WriteLine($"User {winnerId} won auction for car {carId} ({carName}) with bid ${winningBid}");
+                
+                // We could use reflection to call the SignalR hub method here
+                // In a production app, this would be better handled through events
+                var hubType = Type.GetType("CarAuction.API.Hubs.AuctionHub, CarAuction.API");
+                if (hubType != null)
+                {
+                    var method = hubType.GetMethod("NotifyAuctionWinner", 
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    method?.Invoke(null, new object[] { winnerId, carId, carName, winningBid });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to notify auction winner: {ex.Message}");
             }
             
             return Task.CompletedTask;
@@ -278,6 +318,63 @@ namespace CarAuction.Application.Services
             return updatedCount;
         }
 
+        public async Task<List<WonCarDto>> GetWonCarsByUserAsync(string userId)
+        {
+            var wonCars = await _bidRepository.GetWonCarsByUserAsync(userId);
+            
+            return wonCars.Select(car => 
+            {
+                var winningBid = car.Bids.OrderByDescending(b => b.Amount).First();
+                return new WonCarDto
+                {
+                    Id = car.Id,
+                    Name = car.Name,
+                    Model = car.Model,
+                    Year = car.Year,
+                    StartPrice = car.StartPrice,
+                    WinningBid = winningBid.Amount,
+                    PhotoUrl = car.PhotoUrl,
+                    Images = car.Images?
+                        .Select(i => new CarImageDto 
+                        { 
+                            Id = i.Id, 
+                            ImageUrl = i.ImageUrl, 
+                            IsPrimary = i.IsPrimary 
+                        })
+                        .ToList() ?? new List<CarImageDto>(),
+                    AuctionEndDate = car.AuctionEndDate,
+                    SellerName = $"{car.Seller?.FirstName} {car.Seller?.LastName}"
+                };
+            }).ToList();
+        }
+
+        public async Task<List<UserBidDto>> GetUserBidsAsync(string userId)
+        {
+            var userBids = await _bidRepository.GetBidsByUserAsync(userId);
+            
+            return userBids.Select(bid => 
+            {
+                var highestBid = bid.Car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault();
+                var isWinning = highestBid?.BidderId == userId;
+                var hasWon = bid.Car.Status == CarStatus.Sold && isWinning;
+                
+                return new UserBidDto
+                {
+                    Id = bid.Id,
+                    Amount = bid.Amount,
+                    PlacedAt = bid.PlacedAt,
+                    CarId = bid.CarId,
+                    CarName = bid.Car.Name,
+                    CarModel = bid.Car.Model,
+                    CarYear = bid.Car.Year,
+                    AuctionStatus = bid.Car.Status.ToString(),
+                    IsWinning = isWinning,
+                    HasWon = hasWon,
+                    CurrentHighestBid = highestBid?.Amount ?? 0
+                };
+            }).ToList();
+        }
+
         private CarDto MapToCarDto(Car car)
         {
             var highestBid = car.Bids?.OrderByDescending(b => b.Amount).FirstOrDefault();
@@ -341,7 +438,8 @@ namespace CarAuction.Application.Services
                         Id = b.Id,
                         Amount = b.Amount,
                         PlacedAt = b.PlacedAt,
-                        BidderName = $"{b.Bidder?.FirstName} {b.Bidder?.LastName}"
+                        BidderName = $"{b.Bidder?.FirstName} {b.Bidder?.LastName}",
+                        BidderId = b.BidderId
                     })
                     .ToList() ?? new List<BidDto>()
             };

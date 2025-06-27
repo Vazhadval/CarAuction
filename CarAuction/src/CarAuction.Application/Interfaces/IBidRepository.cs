@@ -10,5 +10,7 @@ namespace CarAuction.Application.Interfaces
         Task<Bid?> GetHighestBidForCarAsync(int carId);
         Task<Bid> AddBidAsync(Bid bid);
         Task<ApplicationUser?> GetBidderByIdAsync(string bidderId);
+        Task<List<Bid>> GetBidsByUserAsync(string userId);
+        Task<List<Car>> GetWonCarsByUserAsync(string userId);
     }
 }

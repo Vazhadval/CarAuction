@@ -29,6 +29,15 @@ namespace CarAuction.API.Hubs
                 await _hubContext.Clients.Group("car-listings").SendAsync("CarStatusChanged", carId, newStatus);
             }
         }
+
+        // New method to notify auction winners
+        public static async Task NotifyAuctionWinner(string winnerId, int carId, string carName, decimal winningBid)
+        {
+            if (_hubContext != null)
+            {
+                await _hubContext.Clients.User(winnerId).SendAsync("AuctionWon", carId, carName, winningBid);
+            }
+        }
         
         public async Task JoinCarListings()
         {

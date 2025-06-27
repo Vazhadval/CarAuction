@@ -25,5 +25,19 @@ namespace CarAuction.Application.Interfaces
         /// </summary>
         /// <returns>The number of cars whose status was updated</returns>
         Task<int> UpdateAllCarStatusesAsync();
+
+        /// <summary>
+        /// Gets the cars won by a specific user
+        /// </summary>
+        /// <param name="userId">The ID of the user</param>
+        /// <returns>List of cars won by the user</returns>
+        Task<List<WonCarDto>> GetWonCarsByUserAsync(string userId);
+
+        /// <summary>
+        /// Gets all bids placed by a specific user
+        /// </summary>
+        /// <param name="userId">The ID of the user</param>
+        /// <returns>List of user's bids with status information</returns>
+        Task<List<UserBidDto>> GetUserBidsAsync(string userId);
     }
 }
