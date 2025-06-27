@@ -12,6 +12,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel for hosting environments
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+});
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -86,10 +92,15 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// Only use Swagger in Development environment
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-app.UseHttpsRedirection();
+// Remove HTTPS redirection for shared hosting (SmarterASP.NET handles SSL)
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("AllowAll");
 
@@ -103,45 +114,75 @@ app.MapHub<AuctionHub>("/auctionHub");
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.Migrate();
-
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-
-        // Create roles if they don't exist
-        if (!await roleManager.RoleExistsAsync("Admin"))
-            await roleManager.CreateAsync(new IdentityRole("Admin"));
-
-        if (!await roleManager.RoleExistsAsync("User"))
-            await roleManager.CreateAsync(new IdentityRole("User"));
-
-        // Create admin user if it doesn't exist
-        var adminEmail = "admin@carauction.com";
-        var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-        if (adminUser == null)
+        
+        // Test database connection first
+        logger.LogInformation("Testing database connection...");
+        if (await context.Database.CanConnectAsync())
         {
-            adminUser = new ApplicationUser
-            {
-                UserName = adminEmail,
-                Email = adminEmail,
-                FirstName = "System",
-                LastName = "Admin",
-                EmailConfirmed = true,
-                RegisteredDate = DateTime.UtcNow
-            };
+            logger.LogInformation("Database connection successful. Running migrations...");
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Database migrations completed successfully.");
+            
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-            await userManager.CreateAsync(adminUser, "Admin123!");
-            await userManager.AddToRoleAsync(adminUser, "Admin");
+            // Create roles if they don't exist
+            if (!await roleManager.RoleExistsAsync("Admin"))
+            {
+                await roleManager.CreateAsync(new IdentityRole("Admin"));
+                logger.LogInformation("Admin role created.");
+            }
+
+            if (!await roleManager.RoleExistsAsync("User"))
+            {
+                await roleManager.CreateAsync(new IdentityRole("User"));
+                logger.LogInformation("User role created.");
+            }
+
+            // Create admin user if it doesn't exist
+            var adminEmail = "admin@carauction.com";
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+            if (adminUser == null)
+            {
+                adminUser = new ApplicationUser
+                {
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    FirstName = "System",
+                    LastName = "Admin",
+                    EmailConfirmed = true,
+                    RegisteredDate = DateTime.UtcNow
+                };
+
+                var result = await userManager.CreateAsync(adminUser, "Admin123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                    logger.LogInformation("Admin user created successfully.");
+                }
+                else
+                {
+                    logger.LogError("Failed to create admin user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+            }
+            
+            logger.LogInformation("Application initialization completed successfully.");
+        }
+        else
+        {
+            logger.LogError("Cannot connect to database. Please check connection string.");
         }
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while initializing the database.");
+        logger.LogError(ex, "An error occurred during application initialization. The application will continue but may not function properly.");
+        // Don't throw - let the application start even if DB init fails
     }
 }
 
