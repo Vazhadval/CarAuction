@@ -16,6 +16,7 @@ const API_URL = `${API_CONFIG.BASE_URL}/api`;
 
 const apiClient = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
@@ -65,9 +66,11 @@ export const uploadCarImages = (files: File[]): Promise<any> => {
   });
 
   return axios.post(`${API_URL}/uploads/car-images`, formData, {
+    withCredentials: true,
     headers: {
       'Content-Type': 'multipart/form-data',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'ngrok-skip-browser-warning': 'true'
     }
   });
 };
