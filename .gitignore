@@ -1,3 +1,4 @@
+# .NET specific ignores
 CarAuction/src/CarAuction.API/bin/Debug/net9.0/Azure.Core.dll
 CarAuction/src/CarAuction.API/bin/
 CarAuction/src/CarAuction.API/obj/
@@ -8,3 +9,15 @@ CarAuction/src/CarAuction.Application/bin/
 CarAuction/src/CarAuction.Application/obj/
 CarAuction/src/CarAuction.Domain/bin/
 CarAuction/.vs/
+
+# Node.js and React specific ignores
+CarAuction/src/carauction.web/node_modules/
+CarAuction/src/carauction.web/npm-debug.log*
+CarAuction/src/carauction.web/yarn-debug.log*
+CarAuction/src/carauction.web/yarn-error.log*
+CarAuction/src/carauction.web/.env.local
+CarAuction/src/carauction.web/.env.development.local
+CarAuction/src/carauction.web/.env.test.local
+CarAuction/src/carauction.web/.env.production.local
+CarAuction/src/carauction.web/build/
+CarAuction/src/carauction.web/coverage/
