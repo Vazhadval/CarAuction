@@ -1,5 +1,5 @@
 // Helper functions for handling image URLs
-const API_BASE_URL = 'https://localhost:7000';
+import { API_CONFIG } from '../config/apiConfig';
 
 /**
  * Ensures an image URL is absolute by prepending the API base URL if it's relative
@@ -12,7 +12,7 @@ export const getAbsoluteImageUrl = (url: string | undefined): string => {
   }
   
   if (url.startsWith('/')) {
-    return `${API_BASE_URL}${url}`;
+    return `${API_CONFIG.BASE_URL}${url}`;
   }
   
   return url;

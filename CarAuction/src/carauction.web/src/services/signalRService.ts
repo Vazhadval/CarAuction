@@ -1,5 +1,6 @@
 import * as signalR from '@microsoft/signalr';
 import { CarDetails, PlaceBidDto } from '../types';
+import { API_CONFIG } from '../config/apiConfig';
 
 // Define the interface for our SignalR service
 export interface IAuctionSignalRService {
@@ -27,7 +28,7 @@ class AuctionSignalRService implements IAuctionSignalRService {
 
   async startConnection(token: string) {
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`https://localhost:7000/auctionHub?access_token=${token}`)
+      .withUrl(`${API_CONFIG.BASE_URL}${API_CONFIG.SIGNALR_HUB}?access_token=${token}`)
       .withAutomaticReconnect()
       .build();
 
