@@ -16,7 +16,11 @@ export const API_CONFIG = {
   },
   
   // SignalR Hub
-  SIGNALR_HUB: '/auctionHub'
+  SIGNALR_HUB: '/auctionHub',
+  
+  // Environment info
+  ENVIRONMENT: isDevelopment ? 'development' : 'production',
+  IS_DEVELOPMENT: isDevelopment
 };
 
 export default API_CONFIG;
