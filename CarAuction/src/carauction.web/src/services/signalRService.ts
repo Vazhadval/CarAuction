@@ -33,8 +33,9 @@ class AuctionSignalRService implements IAuctionSignalRService {
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling,
         headers: {
           'ngrok-skip-browser-warning': 'true'
-        },
-        withCredentials: true
+        }
+        // Temporarily remove withCredentials to test CORS
+        // withCredentials: true
       })
       .withAutomaticReconnect()
       .build();
