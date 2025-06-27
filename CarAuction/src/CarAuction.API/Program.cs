@@ -26,18 +26,12 @@ builder.Services.AddSwaggerGen();
 // Add CORS - Specify exact origins for SignalR compatibility
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy => policy
-            .WithOrigins(
-                "http://localhost:3000",
-                "https://localhost:3000",
-                "http://localhost:3001",
-                "https://localhost:3001",
-                "https://car-auction-three.vercel.app"
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials());
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
 
 // Configure Database

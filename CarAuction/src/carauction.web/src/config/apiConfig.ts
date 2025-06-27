@@ -4,7 +4,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 export const API_CONFIG = {
   BASE_URL: isDevelopment 
     ? 'https://localhost:7000' 
-    : 'http://vazhadval2-001-site2.qtempurl.com',
+    : 'https://e1e6-31-146-76-12.ngrok-free.app',  // Use relative URLs for production (will be proxied by Vercel)
   
   // API endpoints
   ENDPOINTS: {
