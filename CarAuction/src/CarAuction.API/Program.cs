@@ -23,14 +23,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add CORS - Allow all origins
+// Add CORS - Specify exact origins for SignalR compatibility
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
-        builder => builder
-            .AllowAnyOrigin()
+        policy => policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "http://localhost:3001",
+                "https://localhost:3001",
+                "https://car-auction-three.vercel.app"
+            )
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 });
 
 // Configure Database
