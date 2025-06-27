@@ -198,6 +198,52 @@ namespace CarAuction.Application.Services
             return Task.CompletedTask;
         }
 
+        private Task NotifyAuctionExtension(int carId, DateTime newEndTime)
+        {
+            try
+            {
+                Console.WriteLine($"Auction for car {carId} extended. New end time: {newEndTime}");
+                
+                // Use reflection to call SignalR hub method
+                var hubType = Type.GetType("CarAuction.API.Hubs.AuctionHub, CarAuction.API");
+                if (hubType != null)
+                {
+                    var method = hubType.GetMethod("NotifyAuctionExtension", 
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    method?.Invoke(null, new object[] { carId, newEndTime });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to notify auction extension: {ex.Message}");
+            }
+            
+            return Task.CompletedTask;
+        }
+
+        private Task NotifyNewBid(int carId, decimal amount, string bidderId, bool auctionExtended, DateTime endTime)
+        {
+            try
+            {
+                Console.WriteLine($"New bid placed for car {carId}: ${amount} by user {bidderId}. Extension: {auctionExtended}");
+                
+                // Use reflection to call SignalR hub method
+                var hubType = Type.GetType("CarAuction.API.Hubs.AuctionHub, CarAuction.API");
+                if (hubType != null)
+                {
+                    var method = hubType.GetMethod("NotifyNewBid", 
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    method?.Invoke(null, new object[] { carId, amount, bidderId, auctionExtended, endTime });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to notify new bid: {ex.Message}");
+            }
+            
+            return Task.CompletedTask;
+        }
+
         public async Task<CarDto?> AddCarAsync(CreateCarDto carDto, string sellerId)
         {
             // Get seller to satisfy required navigation property
@@ -277,6 +323,23 @@ namespace CarAuction.Application.Services
             var bidder = await _bidRepository.GetBidderByIdAsync(bidderId);
             if (bidder == null)
                 return false;
+
+            // Check if auction needs extension (if 60 seconds or less remaining)
+            var timeRemaining = car.AuctionEndDate - now;
+            var auctionExtended = false;
+            
+            if (timeRemaining.TotalSeconds <= 60 && timeRemaining.TotalSeconds > 0)
+            {
+                // Extend auction by 15 seconds
+                car.AuctionEndDate = car.AuctionEndDate.AddSeconds(15);
+                await _carRepository.UpdateCarAsync(car);
+                auctionExtended = true;
+                
+                Console.WriteLine($"Auction for car {car.Id} extended by 15 seconds. New end time: {car.AuctionEndDate}");
+                
+                // Notify all clients about auction extension
+                await NotifyAuctionExtension(car.Id, car.AuctionEndDate);
+            }
                 
             // Create new bid
             var bid = new Bid
@@ -290,6 +353,10 @@ namespace CarAuction.Application.Services
             };
 
             await _bidRepository.AddBidAsync(bid);
+            
+            // Notify about the new bid (including potential auction extension info)
+            await NotifyNewBid(car.Id, bidDto.Amount, bidderId, auctionExtended, car.AuctionEndDate);
+            
             return true;
         }
         

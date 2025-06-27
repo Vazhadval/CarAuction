@@ -38,6 +38,24 @@ namespace CarAuction.API.Hubs
                 await _hubContext.Clients.User(winnerId).SendAsync("AuctionWon", carId, carName, winningBid);
             }
         }
+
+        // New method to notify auction extension
+        public static async Task NotifyAuctionExtension(int carId, DateTime newEndTime)
+        {
+            if (_hubContext != null)
+            {
+                await _hubContext.Clients.Group($"car-{carId}").SendAsync("AuctionExtended", carId, newEndTime);
+            }
+        }
+
+        // Enhanced method to notify new bids with extension info
+        public static async Task NotifyNewBid(int carId, decimal amount, string bidderId, bool auctionExtended, DateTime endTime)
+        {
+            if (_hubContext != null)
+            {
+                await _hubContext.Clients.Group($"car-{carId}").SendAsync("BidPlacedWithExtension", carId, amount, bidderId, auctionExtended, endTime);
+            }
+        }
         
         public async Task JoinCarListings()
         {
@@ -70,6 +88,7 @@ namespace CarAuction.API.Hubs
                 var carDetails = await _auctionService.GetCarDetailsAsync(bidDto.CarId);
                 
                 // Notify all clients in the car's group about the new bid
+                // The PlaceBidAsync method now handles extension notifications automatically
                 await Clients.Group($"car-{bidDto.CarId}").SendAsync("BidPlaced", carDetails);
             }
             
