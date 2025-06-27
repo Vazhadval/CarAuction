@@ -64,7 +64,7 @@ The application follows Clean Architecture principles:
 3. **Run the API**
    ```
    cd src/CarAuction.API
-   dotnet run
+   dotnet run --launch-profile https
    ```
    The API will be available at https://localhost:7000
 
