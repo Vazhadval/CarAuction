@@ -27,7 +27,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     } catch (err: any) {
       setError(
         err.response?.data?.message || 
-        'Login failed. Please check your credentials and try again.'
+        'შესვლა ვერ მოხერხდა. გთხოვთ, შეამოწმეთ თქვენი მონაცემები და კვლავ სცადეთ.'
       );
     } finally {
       setLoading(false);
@@ -37,14 +37,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="d-flex justify-content-center">
       <div className="col-md-6">
-        <h2 className="mb-4">Login</h2>
+        <h2 className="mb-4">შესვლა</h2>
         {error && <Alert variant="danger">{error}</Alert>}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formEmail">
-            <Form.Label>Email address</Form.Label>
+            <Form.Label>ელ-ფოსტის მისამართი</Form.Label>
             <Form.Control
               type="email"
-              placeholder="Enter email"
+              placeholder="შეიყვანეთ ელ-ფოსტა"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -52,10 +52,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formPassword">
-            <Form.Label>Password</Form.Label>
+            <Form.Label>პაროლი</Form.Label>
             <Form.Control
               type="password"
-              placeholder="Password"
+              placeholder="პაროლი"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -63,7 +63,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </Form.Group>
 
           <Button variant="primary" type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'შედის...' : 'შესვლა'}
           </Button>
         </Form>
       </div>

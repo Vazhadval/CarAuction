@@ -28,7 +28,13 @@ class AuctionSignalRService implements IAuctionSignalRService {
 
   async startConnection(token: string) {
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${API_CONFIG.BASE_URL}${API_CONFIG.SIGNALR_HUB}?access_token=${token}`)
+      .withUrl(`${API_CONFIG.BASE_URL}${API_CONFIG.SIGNALR_HUB}?access_token=${token}`, {
+        skipNegotiation: false,
+        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling,
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      })
       .withAutomaticReconnect()
       .build();
 

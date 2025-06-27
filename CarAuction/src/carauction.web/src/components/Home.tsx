@@ -18,7 +18,7 @@ const Home: React.FC = () => {
       const response = await getAllCars();
       setCars(response.data);
     } catch (err) {
-      setError('Failed to fetch cars. Please try again later.');
+      setError('მანქანების ჩამოტვირთვა ვერ მოხერხდა. გთხოვთ, კვლავ სცადეთ.');
       console.error('Error fetching cars:', err);
     } finally {
       setLoading(false);
@@ -174,7 +174,7 @@ const Home: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-center mt-5">Loading cars...</div>;
+    return <div className="text-center mt-5">მანქანები იტვირთება...</div>;
   }
 
   if (error) {
@@ -184,13 +184,13 @@ const Home: React.FC = () => {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Available Cars</h1>
+        <h1>ხელმისაწვდომი მანქანები</h1>
         <Button 
           variant="outline-primary" 
           onClick={fetchCars} 
           disabled={loading}
         >
-          {loading ? 'Refreshing...' : 'Refresh Auctions'}
+          {loading ? 'ახლდება...' : 'აუქციონების განახლება'}
         </Button>
       </div>
       <Row xs={1} md={2} lg={3} className="g-4">
@@ -211,31 +211,31 @@ const Home: React.FC = () => {
                   
                   {car.status === 'OngoingAuction' && (
                     <Badge bg="danger" className="ms-2">
-                      Ends in: {getTimeRemaining(car.auctionEndDate)}
+                      სრულდება: {getTimeRemaining(car.auctionEndDate)}
                     </Badge>
                   )}
                   
                   {car.status === 'UpcomingAuction' && (
                     <Badge bg="info" className="ms-2">
-                      Starts in: {getTimeRemaining(car.auctionStartDate)}
+                      იწყება: {getTimeRemaining(car.auctionStartDate)}
                     </Badge>
                   )}
                 </div>
                 <div className="mb-2">
-                  <strong>Start Price:</strong> ${car.startPrice.toFixed(2)}
+                  <strong>საწყისი ფასი:</strong> ${car.startPrice.toFixed(2)}
                 </div>
                 {car.currentBid > 0 && (
                   <div className="mb-2">
-                    <strong>Current Bid:</strong> ${car.currentBid.toFixed(2)}
+                    <strong>მიმდინარე ბიდი:</strong> ${car.currentBid.toFixed(2)}
                   </div>
                 )}
                 <div className="mb-2">
-                  <strong>Auction:</strong> {formatDate(car.auctionStartDate)} - {formatDate(car.auctionEndDate)}
+                  <strong>აუქციონი:</strong> {formatDate(car.auctionStartDate)} - {formatDate(car.auctionEndDate)}
                 </div>
                 <div className="mb-3">
-                  <strong>Seller:</strong> {car.sellerName}
+                  <strong>გამყიდველი:</strong> {car.sellerName}
                 </div>
-                <Link to={`/car/${car.id}`} className="btn btn-primary">View Details</Link>
+                <Link to={`/car/${car.id}`} className="btn btn-primary">დეტალების ნახვა</Link>
               </Card.Body>
             </Card>
           </Col>
@@ -243,7 +243,7 @@ const Home: React.FC = () => {
       </Row>
       {cars.length === 0 && (
         <div className="text-center mt-5">
-          <p>No cars available at the moment.</p>
+          <p>ამ დროისთვის მანქანები არ არის ხელმისაწვდომი.</p>
         </div>
       )}
     </>

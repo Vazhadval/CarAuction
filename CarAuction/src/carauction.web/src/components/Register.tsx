@@ -29,7 +29,7 @@ const Register: React.FC = () => {
 
     // Validation
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('პაროლები არ ემთხვევა');
       return;
     }
 
@@ -50,7 +50,7 @@ const Register: React.FC = () => {
     } catch (err: any) {
       setError(
         err.response?.data?.message || 
-        'Registration failed. Please try again later.'
+        'რეგისტრაცია ვერ მოხერხდა. გთხოვთ, კვლავ სცადეთ.'
       );
     } finally {
       setLoading(false);
@@ -60,20 +60,20 @@ const Register: React.FC = () => {
   return (
     <div className="d-flex justify-content-center">
       <div className="col-md-6">
-        <h2 className="mb-4">Register</h2>
+        <h2 className="mb-4">რეგისტრაცია</h2>
         {error && <Alert variant="danger">{error}</Alert>}
         {success && (
           <Alert variant="success">
-            Registration successful! Redirecting to login page...
+            რეგისტრაცია წარმატებით დასრულდა! გადამისამართება შესვლის გვერდზე...
           </Alert>
         )}
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formFirstName">
-            <Form.Label>First Name</Form.Label>
+            <Form.Label>სახელი</Form.Label>
             <Form.Control
               type="text"
               name="firstName"
-              placeholder="Enter first name"
+              placeholder="შეიყვანეთ სახელი"
               value={firstName}
               onChange={handleChange}
               required
@@ -81,11 +81,11 @@ const Register: React.FC = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formLastName">
-            <Form.Label>Last Name</Form.Label>
+            <Form.Label>გვარი</Form.Label>
             <Form.Control
               type="text"
               name="lastName"
-              placeholder="Enter last name"
+              placeholder="შეიყვანეთ გვარი"
               value={lastName}
               onChange={handleChange}
               required
@@ -93,11 +93,11 @@ const Register: React.FC = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formEmail">
-            <Form.Label>Email address</Form.Label>
+            <Form.Label>ელ-ფოსტის მისამართი</Form.Label>
             <Form.Control
               type="email"
               name="email"
-              placeholder="Enter email"
+              placeholder="შეიყვანეთ ელ-ფოსტა"
               value={email}
               onChange={handleChange}
               required
@@ -105,11 +105,11 @@ const Register: React.FC = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formPassword">
-            <Form.Label>Password</Form.Label>
+            <Form.Label>პაროლი</Form.Label>
             <Form.Control
               type="password"
               name="password"
-              placeholder="Password"
+              placeholder="პაროლი"
               value={password}
               onChange={handleChange}
               required
@@ -117,11 +117,11 @@ const Register: React.FC = () => {
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formConfirmPassword">
-            <Form.Label>Confirm Password</Form.Label>
+            <Form.Label>პაროლის დადასტურება</Form.Label>
             <Form.Control
               type="password"
               name="confirmPassword"
-              placeholder="Confirm Password"
+              placeholder="დაადასტურეთ პაროლი"
               value={confirmPassword}
               onChange={handleChange}
               required
@@ -129,7 +129,7 @@ const Register: React.FC = () => {
           </Form.Group>
 
           <Button variant="primary" type="submit" disabled={loading || success}>
-            {loading ? 'Registering...' : 'Register'}
+            {loading ? 'რეგისტრირდება...' : 'რეგისტრაცია'}
           </Button>
         </Form>
       </div>

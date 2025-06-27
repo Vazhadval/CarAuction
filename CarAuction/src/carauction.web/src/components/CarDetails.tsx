@@ -29,7 +29,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         const response = await getCarDetails(Number(id));
         setCar(response.data);
       } catch (err) {
-        setError('Failed to fetch car details. Please try again later.');
+        setError('მანქანის დეტალების ჩამოტვირთვა ვერ მოხერხდა. გთხოვთ, კვლავ სცადეთ.');
         console.error('Error fetching car details:', err);
       } finally {
         setLoading(false);
@@ -51,7 +51,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         if (updatedCar.recentBids && updatedCar.recentBids.length > 0) {
           const latestBid = updatedCar.recentBids[0];
           if (user && latestBid.bidderName !== user?.firstName + ' ' + user?.lastName) {
-            showToast('New Bid', `${latestBid.bidderName} placed a bid of $${latestBid.amount.toFixed(2)}`, 'info');
+            showToast('ახალი ბიდი', `${latestBid.bidderName}-მა განათავსა ბიდი $${latestBid.amount.toFixed(2)}`, 'info');
           }
         }
       });
@@ -61,7 +61,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         if (carId === car.id && car.status !== newStatus) {
           setCar(prev => {
             if (prev) {
-              showToast('Status Change', `Auction status changed to ${newStatus.replace(/([A-Z])/g, ' $1').trim()}`, 'info');
+              showToast('სტატუსის ცვლილება', `აუქციონის სტატუსი შეიცვალა: ${newStatus.replace(/([A-Z])/g, ' $1').trim()}`, 'info');
               return { ...prev, status: newStatus };
             }
             return prev;
@@ -72,7 +72,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
       // Listen for auction won notifications
       signalRService.onAuctionWon((carId: number, carName: string, winningBid: number) => {
         if (carId === car.id) {
-          showToast('Congratulations!', `You won the auction for ${carName} with a bid of $${winningBid.toFixed(2)}!`, 'success');
+          showToast('გილოცავთ!', `თქვენ მოიგეთ აუქციონი ${carName}-ზე $${winningBid.toFixed(2)} ბიდით!`, 'success');
         }
       });
 
@@ -125,7 +125,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
     
     // Validation
     if (isNaN(amount) || amount <= 0) {
-      setBidError('Please enter a valid bid amount');
+      setBidError('გთხოვთ, შეიყვანეთ ბიდის ვალიდური თანხა');
       return;
     }
 
@@ -149,16 +149,16 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
       if (success) {
         setBidSuccess(true);
         setBidAmount('');
-        showToast('Bid Placed', 'Your bid was successfully placed!', 'success');
+        showToast('ბიდი განთავსდა', 'თქვენი ბიდი წარმატებით განთავსდა!', 'success');
         setTimeout(() => setBidSuccess(false), 3000);
       } else {
-        setBidError('Failed to place bid. Please try again.');
-        showToast('Bid Failed', 'There was a problem placing your bid. Please try again.', 'error');
+        setBidError('ბიდის განთავსება ვერ მოხერხდა. გთხოვთ, კვლავ სცადეთ.');
+        showToast('ბიდი ვერ განთავსდა', 'ბიდის განთავსებისას პრობლემა იყო. გთხოვთ, კვლავ სცადეთ.', 'error');
       }
     } catch (err) {
-      const errorMessage = 'An error occurred while placing your bid. Please try again.';
+      const errorMessage = 'ბიდის განთავსებისას შეცდომა მოხდა. გთხოვთ, კვლავ სცადეთ.';
       setBidError(errorMessage);
-      showToast('Error', errorMessage, 'error');
+      showToast('შეცდომა', errorMessage, 'error');
       console.error('Error placing bid:', err);
     }
   };
@@ -320,11 +320,11 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
   const isUserSeller = user && car && user.id === car.sellerId;
 
   if (loading) {
-    return <div className="text-center mt-5">Loading car details...</div>;
+    return <div className="text-center mt-5">მანქანის დეტალები იტვირთება...</div>;
   }
 
   if (error || !car) {
-    return <div className="alert alert-danger">{error || 'Car not found'}</div>;
+    return <div className="alert alert-danger">{error || 'მანქანა ვერ მოიძებნა'}</div>;
   }
 
   return (
@@ -352,22 +352,22 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             
             <Row className="mt-4">
               <Col md={6}>
-                <strong>Start Price:</strong> ${car.startPrice.toFixed(2)}
+                <strong>საწყისი ფასი:</strong> ${car.startPrice.toFixed(2)}
               </Col>
               <Col md={6}>
-                <strong>Current Bid:</strong> ${car.currentBid.toFixed(2) || car.startPrice.toFixed(2)}
+                <strong>მიმდინარე ბიდი:</strong> ${car.currentBid.toFixed(2) || car.startPrice.toFixed(2)}
               </Col>
               <Col md={6} className="mt-2">
-                <strong>Auction Start:</strong> {formatDate(car.auctionStartDate)}
+                <strong>აუქციონის დაწყება:</strong> {formatDate(car.auctionStartDate)}
               </Col>
               <Col md={6} className="mt-2">
-                <strong>Auction End:</strong> {formatDate(car.auctionEndDate)}
+                <strong>აუქციონის დასრულება:</strong> {formatDate(car.auctionEndDate)}
               </Col>
               <Col md={6} className="mt-2">
-                <strong>Seller:</strong> {car.sellerName}
+                <strong>გამყიდველი:</strong> {car.sellerName}
               </Col>
               <Col md={6} className="mt-2">
-                <strong>Total Bids:</strong> {car.bidCount}
+                <strong>სულ ბიდები:</strong> {car.bidCount}
               </Col>
             </Row>
           </Card.Body>
@@ -375,7 +375,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
 
         {/* Bid History */}
         <Card className="mt-4">
-          <Card.Header>Recent Bids</Card.Header>
+          <Card.Header>ბოლო ბიდები</Card.Header>
           <ListGroup variant="flush">
             {car.recentBids && car.recentBids.length > 0 ? (
               car.recentBids.map((bid: any, index: number) => {
