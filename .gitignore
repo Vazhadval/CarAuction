@@ -21,3 +21,6 @@ CarAuction/src/carauction.web/.env.test.local
 CarAuction/src/carauction.web/.env.production.local
 CarAuction/src/carauction.web/build/
 CarAuction/src/carauction.web/coverage/
+
+# Exclude development builds but keep deployment package
+CarAuction/src/CarAuction.API/publish/
