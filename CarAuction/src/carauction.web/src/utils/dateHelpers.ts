@@ -5,9 +5,14 @@ const GEORGIAN_TIMEZONE = 'Asia/Tbilisi';
  * Get current time in Georgian timezone
  */
 export const getCurrentGeorgianTime = (): Date => {
+  // Get the current time in Georgian timezone
   const now = new Date();
   const georgianTimeString = now.toLocaleString("sv-SE", {timeZone: GEORGIAN_TIMEZONE});
-  return new Date(georgianTimeString);
+  
+  // Parse the Georgian time string back to a Date object
+  // The sv-SE format gives us "YYYY-MM-DD HH:mm:ss"
+  const georgianDate = new Date(georgianTimeString);
+  return georgianDate;
 };
 
 /**

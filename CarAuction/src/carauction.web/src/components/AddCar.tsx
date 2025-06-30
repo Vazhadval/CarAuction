@@ -35,13 +35,12 @@ const AddCar: React.FC = () => {
 
   // Initialize default Georgian time dates
   useEffect(() => {
-    // Get current time and add 1 hour for start, 7 days for end
+    // Get current time for start, 7 days later for end
     const now = getCurrentGeorgianTime();
-    const oneHourLater = new Date(now.getTime() + (60 * 60 * 1000));
     const sevenDaysLater = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
     
     // Format for datetime-local inputs
-    const startForInput = dateToGeorgianInput(oneHourLater);
+    const startForInput = dateToGeorgianInput(now);
     const endForInput = dateToGeorgianInput(sevenDaysLater);
 
     setFormData(prev => ({
