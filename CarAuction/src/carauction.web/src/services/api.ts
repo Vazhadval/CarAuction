@@ -51,6 +51,7 @@ export const register = (userData: UserRegistration) => {
 
 // Cars API
 export const getAllCars = () => {
+  console.log('🚀 getAllCars called with API_URL:', API_URL);
   return apiClient.get<Car[]>('/cars');
 };
 
