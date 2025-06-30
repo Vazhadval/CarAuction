@@ -79,6 +79,39 @@ export const getTimeRemaining = (endDate: Date | string): string => {
 };
 
 /**
+ * Get time remaining with total seconds for styling
+ * @param endDate - End date (Date object or ISO string)
+ */
+export const getTimeRemainingWithSeconds = (endDate: Date | string): { formatted: string; totalSeconds: number } => {
+  const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
+  const now = getCurrentGeorgianTime();
+  
+  const totalSeconds = Math.floor((endDateObj.getTime() - now.getTime()) / 1000);
+  
+  if (totalSeconds <= 0) {
+    return { formatted: 'აუქციონი დასრულდა', totalSeconds: 0 };
+  }
+  
+  const days = Math.floor(totalSeconds / (3600 * 24));
+  const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  
+  let formatted: string;
+  if (days > 0) {
+    formatted = `${days}დღე ${hours}სთ ${minutes}წთ`;
+  } else if (hours > 0) {
+    formatted = `${hours}სთ ${minutes}წთ ${seconds}წმ`;
+  } else if (minutes > 0) {
+    formatted = `${minutes}წთ ${seconds}წმ`;
+  } else {
+    formatted = `${seconds}წმ`;
+  }
+  
+  return { formatted, totalSeconds };
+};
+
+/**
  * Check if auction is currently active
  * @param startDate - Start date (Date object or ISO string)
  * @param endDate - End date (Date object or ISO string)
