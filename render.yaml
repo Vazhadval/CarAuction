@@ -1,3 +1,8 @@
+databases:
+  - name: carauction-db
+    databaseName: carauction
+    user: carauction_user
+
 services:
   - type: web
     name: carauction-api
@@ -13,7 +18,3 @@ services:
           name: carauction-db
           property: connectionString
     healthCheckPath: /api/cars
-  
-  - type: pserv
-    name: carauction-db
-    plan: free
