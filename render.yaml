@@ -12,17 +12,5 @@ services:
   
   - type: pserv
     name: carauction-db
-    env: postgres14
-    disk:
-      name: carauction-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 10
-
-envVarGroups:
-  - name: database
-    envVars:
-      - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: carauction-db
-          property: connectionString
+    databaseName: carauction
+    user: carauction_user

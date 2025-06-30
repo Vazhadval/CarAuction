@@ -18,9 +18,9 @@ Make sure all your changes are committed and pushed to your GitHub repository.
 
 ### 3. Environment Configuration
 The deployment will automatically:
-- Create a PostgreSQL database
+- Create a PostgreSQL database (carauction-db)
 - Set up the web service with Docker
-- Configure environment variables
+- Provide DATABASE_URL environment variable automatically
 
 ### 4. Database Migration
 The application will automatically run migrations on startup, so your PostgreSQL database will be set up with all the necessary tables.
@@ -41,7 +41,9 @@ The API is configured to allow requests from any origin, so your Vercel frontend
 Files uploaded via the API will be stored in the container's filesystem. For production, consider using cloud storage like AWS S3 or Cloudinary.
 
 ### Database Connection
-The app automatically detects if it's running with PostgreSQL (production) or SQL Server (local development) based on the connection string format.
+- Render automatically provides a `DATABASE_URL` environment variable when you create a PostgreSQL service
+- The app automatically detects if it's running with PostgreSQL (production) or SQL Server (local development) based on the connection string format
+- No manual configuration needed - the database connection is handled automatically
 
 ### Frontend Integration
 Update your frontend's `apiConfig.ts` to point to your new Render URL:

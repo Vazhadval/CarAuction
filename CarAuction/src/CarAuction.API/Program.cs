@@ -38,6 +38,7 @@ builder.Services.AddCors(options =>
 // Configure Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
+    // Render automatically provides DATABASE_URL for PostgreSQL services
     var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
                           ?? builder.Configuration.GetConnectionString("DefaultConnection");
     
