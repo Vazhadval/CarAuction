@@ -37,7 +37,21 @@ builder.Services.AddCors(options =>
 
 // Configure Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                          ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    
+    // Check if it's a PostgreSQL connection string (for production/Render)
+    if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        // Fallback to SQL Server for local development
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // Configure Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -60,7 +74,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-jwt-key-for-development-only"))
     };
 
     options.Events = new JwtBearerEvents

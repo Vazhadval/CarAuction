@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: carauction-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:80
+    healthCheckPath: /api/cars
+  
+  - type: pserv
+    name: carauction-db
+    env: postgres14
+    disk:
+      name: carauction-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+
+envVarGroups:
+  - name: database
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: carauction-db
+          property: connectionString
