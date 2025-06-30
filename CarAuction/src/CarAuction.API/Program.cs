@@ -102,13 +102,6 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
         Console.WriteLine("Using PostgreSQL (Npgsql)");
         
-        if (forcePostgreSQL && !connectionString?.Contains("postgresql://") == true)
-        {
-            // Use a dummy PostgreSQL connection string for migrations
-            connectionString = "Host=localhost;Port=5432;Database=temp_migration_db;Username=temp;Password=temp";
-            Console.WriteLine("Using temporary PostgreSQL connection string for migration generation");
-        }
-        
         // Convert URI format to Npgsql connection string format
         if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
         {

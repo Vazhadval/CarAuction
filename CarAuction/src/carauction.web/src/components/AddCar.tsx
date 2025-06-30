@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Form, Button, Alert, Row, Col, Card, CloseButton, ProgressBar, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { addCar, uploadCarImages } from '../services/api';
 import { UploadResult } from '../types';
 import { useToast } from './ToastProvider';
 import { getAbsoluteImageUrl } from '../utils/imageHelper';
+import { getCurrentGeorgianTime, georgianInputToUtcIso, utcIsoToGeorgianInput } from '../utils/dateHelpers';
 
 const AddCar: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -31,6 +32,29 @@ const AddCar: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  // Initialize default Georgian time dates
+  useEffect(() => {
+    const georgianNow = getCurrentGeorgianTime();
+    const georgianStartDate = new Date(georgianNow.getTime() + (60 * 60 * 1000)); // 1 hour from now
+    const georgianEndDate = new Date(georgianNow.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days from now
+    
+    // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+    const formatForInput = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      auctionStartDate: formatForInput(georgianStartDate),
+      auctionEndDate: formatForInput(georgianEndDate)
+    }));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -113,22 +137,22 @@ const AddCar: React.FC = () => {
 
     // Validate sale type specific fields
     if (formData.saleType === 'Auction') {
-      // Validate dates for auction - ensure they're processed in UTC to match backend
-      const startDate = new Date(formData.auctionStartDate);
-      const endDate = new Date(formData.auctionEndDate);
-      const now = new Date();
+      // Validate dates for auction using Georgian time
+      const startDateInput = new Date(formData.auctionStartDate); // This is Georgian time from input
+      const endDateInput = new Date(formData.auctionEndDate); // This is Georgian time from input
+      const georgianNow = getCurrentGeorgianTime(); // Current Georgian time
       
-      console.log(`Current time: ${now.toISOString()}`);
-      console.log(`Start time: ${startDate.toISOString()}`);
-      console.log(`End time: ${endDate.toISOString()}`);
+      console.log(`Current Georgian time: ${georgianNow.toISOString()}`);
+      console.log(`Start time (Georgian input): ${startDateInput.toISOString()}`);
+      console.log(`End time (Georgian input): ${endDateInput.toISOString()}`);
 
-      if (startDate < now) {
-        setError('აუქციონის დაწყების თარიღი უნდა იყოს მომავალში');
+      if (startDateInput < georgianNow) {
+        setError('აუქციონის დაწყების თარიღი უნდა იყოს მომავალში (ქართული დროით)');
         setLoading(false);
         return;
       }
 
-      if (endDate <= startDate) {
+      if (endDateInput <= startDateInput) {
         setError('აუქციონის დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ');
         setLoading(false);
         return;
@@ -174,19 +198,22 @@ const AddCar: React.FC = () => {
           year: Number(formData.year),
           imageUrls: imageUrls,
           primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined,
-          // Set default auction dates to satisfy database constraints
+          // Set default auction dates to satisfy database constraints (UTC)
           auctionStartDate: now.toISOString(),
           auctionEndDate: defaultEndDate.toISOString()
         };
       } else {
-        // For auctions, use the provided values
+        // For auctions, convert Georgian time inputs to UTC
         carData = {
           ...formData,
           startPrice: parseFloat(formData.startPrice),
           fixedPrice: undefined, // No fixed price for auctions
           year: Number(formData.year),
           imageUrls: imageUrls,
-          primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined
+          primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined,
+          // Convert Georgian time inputs to UTC ISO strings
+          auctionStartDate: georgianInputToUtcIso(formData.auctionStartDate),
+          auctionEndDate: georgianInputToUtcIso(formData.auctionEndDate)
         };
       }
 
@@ -466,7 +493,7 @@ const AddCar: React.FC = () => {
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3" controlId="formAuctionStart">
-                <Form.Label>აუქციონის დაწყების თარიღი და დრო</Form.Label>
+                <Form.Label>აუქციონის დაწყების თარიღი და დრო (ქართული დრო)</Form.Label>
                 <Form.Control
                   type="datetime-local"
                   name="auctionStartDate"
@@ -475,14 +502,14 @@ const AddCar: React.FC = () => {
                   required
                 />
                 <Form.Text className="text-muted">
-                  Auction will automatically change from "Upcoming" to "Ongoing" at this time (UTC).
+                  აუქციონი ავტომატურად გადავა "მიმდინარე" რეჟიმში ამ დროს (ქართული დრო GMT+4).
                 </Form.Text>
               </Form.Group>
             </Col>
             
             <Col md={6}>
               <Form.Group className="mb-3" controlId="formAuctionEnd">
-                <Form.Label>აუქციონის დასრულების თარიღი და დრო</Form.Label>
+                <Form.Label>აუქციონის დასრულების თარიღი და დრო (ქართული დრო)</Form.Label>
                 <Form.Control
                   type="datetime-local"
                   name="auctionEndDate"
@@ -491,7 +518,7 @@ const AddCar: React.FC = () => {
                   required
                 />
                 <Form.Text className="text-muted">
-                  აუქციონი ავტომატურად შეიცვლება "მიმდინარე"-დან "გაყიდული"/"არ არის გაყიდული"-ად ამ დროს (UTC).
+                  აუქციონი ავტომატურად დასრულდება ამ დროს (ქართული დრო GMT+4).
                 </Form.Text>
               </Form.Group>
             </Col>

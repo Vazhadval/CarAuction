@@ -1,30 +1,107 @@
 // Helper functions for dealing with time/dates in the auction system
+// All dates are stored as UTC in the database but displayed in Georgian time (GMT+4)
+
+// Georgian timezone offset (GMT+4)
+const GEORGIAN_TIMEZONE_OFFSET = 4 * 60; // 4 hours in minutes
 
 /**
- * Format a date string for display
- * @param dateString ISO date string
- * @returns Formatted date string
+ * Convert a UTC date to Georgian time
+ * @param utcDate Date object in UTC
+ * @returns Date object adjusted to Georgian time
  */
-export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleString();
+export const utcToGeorgianTime = (utcDate: Date): Date => {
+  const georgianTime = new Date(utcDate.getTime() + (GEORGIAN_TIMEZONE_OFFSET * 60 * 1000));
+  return georgianTime;
 };
 
 /**
- * Calculate and format time remaining until a future date
- * @param endDateStr ISO date string for the end date/time
+ * Convert Georgian time to UTC
+ * @param georgianDate Date object in Georgian time
+ * @returns Date object adjusted to UTC
+ */
+export const georgianTimeToUtc = (georgianDate: Date): Date => {
+  const utcTime = new Date(georgianDate.getTime() - (GEORGIAN_TIMEZONE_OFFSET * 60 * 1000));
+  return utcTime;
+};
+
+/**
+ * Format a UTC date string for display in Georgian time
+ * @param dateString ISO date string (UTC from server)
+ * @returns Formatted date string in Georgian time
+ */
+export const formatDate = (dateString: string): string => {
+  const utcDate = new Date(dateString);
+  const georgianDate = utcToGeorgianTime(utcDate);
+  
+  // Format as Georgian date/time
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Tbilisi' // Georgian timezone
+  };
+  
+  return georgianDate.toLocaleString('en-GB', options) + ' (Georgian Time)';
+};
+
+/**
+ * Get current time in Georgian timezone
+ * @returns Date object representing current Georgian time
+ */
+export const getCurrentGeorgianTime = (): Date => {
+  const now = new Date();
+  return utcToGeorgianTime(now);
+};
+
+/**
+ * Convert Georgian time input to UTC ISO string for API
+ * @param georgianDateString Date/time string in Georgian time (from input)
+ * @returns ISO string in UTC for API
+ */
+export const georgianInputToUtcIso = (georgianDateString: string): string => {
+  const georgianDate = new Date(georgianDateString);
+  const utcDate = georgianTimeToUtc(georgianDate);
+  return utcDate.toISOString();
+};
+
+/**
+ * Convert UTC ISO string to Georgian time for input fields
+ * @param utcIsoString UTC ISO string from API
+ * @returns Date string formatted for HTML datetime-local input in Georgian time
+ */
+export const utcIsoToGeorgianInput = (utcIsoString: string): string => {
+  const utcDate = new Date(utcIsoString);
+  const georgianDate = utcToGeorgianTime(utcDate);
+  
+  // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+  const year = georgianDate.getFullYear();
+  const month = String(georgianDate.getMonth() + 1).padStart(2, '0');
+  const day = String(georgianDate.getDate()).padStart(2, '0');
+  const hours = String(georgianDate.getHours()).padStart(2, '0');
+  const minutes = String(georgianDate.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+/**
+ * Calculate and format time remaining until a future date (using Georgian time)
+ * @param endDateStr ISO date string for the end date/time (UTC from server)
  * @returns Formatted time remaining string
  */
 export const getTimeRemaining = (endDateStr: string): string => {
-  const endDate = new Date(endDateStr);
-  const now = new Date();
+  const utcEndDate = new Date(endDateStr);
+  const georgianEndDate = utcToGeorgianTime(utcEndDate);
+  const georgianNow = getCurrentGeorgianTime();
   
   // If the end date is in the past
-  if (endDate <= now) {
-    return 'Auction ended';
+  if (georgianEndDate <= georgianNow) {
+    return 'აუქციონი დასრულდა';
   }
   
-  const totalSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
+  const totalSeconds = Math.floor((georgianEndDate.getTime() - georgianNow.getTime()) / 1000);
   
   const days = Math.floor(totalSeconds / (3600 * 24));
   const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
@@ -32,31 +109,32 @@ export const getTimeRemaining = (endDateStr: string): string => {
   const seconds = Math.floor(totalSeconds % 60);
   
   if (days > 0) {
-    return `${days}d ${hours}h ${minutes}m`;
+    return `${days}დღე ${hours}სთ ${minutes}წთ`;
   } else if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours}სთ ${minutes}წთ ${seconds}წმ`;
   } else if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
+    return `${minutes}წთ ${seconds}წმ`;
   } else {
-    return `${seconds}s`;
+    return `${seconds}წმ`;
   }
 };
 
 /**
- * Calculate and format time remaining until a future date, including total seconds for styling
- * @param endDateStr ISO date string for the end date/time
+ * Calculate and format time remaining until a future date, including total seconds for styling (using Georgian time)
+ * @param endDateStr ISO date string for the end date/time (UTC from server)
  * @returns Object with formatted time string and total seconds
  */
 export const getTimeRemainingWithSeconds = (endDateStr: string): { formatted: string; totalSeconds: number } => {
-  const endDate = new Date(endDateStr);
-  const now = new Date();
+  const utcEndDate = new Date(endDateStr);
+  const georgianEndDate = utcToGeorgianTime(utcEndDate);
+  const georgianNow = getCurrentGeorgianTime();
   
   // If the end date is in the past
-  if (endDate <= now) {
-    return { formatted: 'Auction ended', totalSeconds: 0 };
+  if (georgianEndDate <= georgianNow) {
+    return { formatted: 'აუქციონი დასრულდა', totalSeconds: 0 };
   }
   
-  const totalSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
+  const totalSeconds = Math.floor((georgianEndDate.getTime() - georgianNow.getTime()) / 1000);
   
   const days = Math.floor(totalSeconds / (3600 * 24));
   const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
@@ -65,39 +143,42 @@ export const getTimeRemainingWithSeconds = (endDateStr: string): { formatted: st
   
   let formatted: string;
   if (days > 0) {
-    formatted = `${days}d ${hours}h ${minutes}m`;
+    formatted = `${days}დღე ${hours}სთ ${minutes}წთ`;
   } else if (hours > 0) {
-    formatted = `${hours}h ${minutes}m ${seconds}s`;
+    formatted = `${hours}სთ ${minutes}წთ ${seconds}წმ`;
   } else if (minutes > 0) {
-    formatted = `${minutes}m ${seconds}s`;
+    formatted = `${minutes}წთ ${seconds}წმ`;
   } else {
-    formatted = `${seconds}s`;
+    formatted = `${seconds}წმ`;
   }
   
   return { formatted, totalSeconds };
 };
 
 /**
- * Check if a date has passed
- * @param dateStr ISO date string
+ * Check if a date has passed (using Georgian time)
+ * @param dateStr ISO date string (UTC from server)
  * @returns boolean - true if the date has passed
  */
 export const hasDatePassed = (dateStr: string): boolean => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  return date <= now;
+  const utcDate = new Date(dateStr);
+  const georgianDate = utcToGeorgianTime(utcDate);
+  const georgianNow = getCurrentGeorgianTime();
+  return georgianDate <= georgianNow;
 };
 
 /**
- * Determines if an auction is currently active (i.e., between start and end dates)
- * @param startDateStr ISO date string for the start date/time
- * @param endDateStr ISO date string for the end date/time
+ * Determines if an auction is currently active (i.e., between start and end dates) using Georgian time
+ * @param startDateStr ISO date string for the start date/time (UTC from server)
+ * @param endDateStr ISO date string for the end date/time (UTC from server)
  * @returns boolean - true if the auction is active
  */
 export const isAuctionActive = (startDateStr: string, endDateStr: string): boolean => {
-  const startDate = new Date(startDateStr);
-  const endDate = new Date(endDateStr);
-  const now = new Date();
+  const utcStartDate = new Date(startDateStr);
+  const utcEndDate = new Date(endDateStr);
+  const georgianStartDate = utcToGeorgianTime(utcStartDate);
+  const georgianEndDate = utcToGeorgianTime(utcEndDate);
+  const georgianNow = getCurrentGeorgianTime();
   
-  return startDate <= now && now <= endDate;
+  return georgianStartDate <= georgianNow && georgianNow <= georgianEndDate;
 };

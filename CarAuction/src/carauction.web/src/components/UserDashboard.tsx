@@ -3,6 +3,7 @@ import { Tabs, Tab, Card, Table, Badge, Alert } from 'react-bootstrap';
 import { getCarsByStatus } from '../services/api';
 import { Car, User, UserBid, WonCar } from '../types';
 import apiClient from '../services/api';
+import { formatDate } from '../utils/dateHelpers';
 
 interface UserDashboardProps {
   user: User | null;
@@ -120,8 +121,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user }) => {
               <td>${car.startPrice.toFixed(2)}</td>
               <td>${car.currentBid ? car.currentBid.toFixed(2) : '0.00'}</td>
               <td>
-                From: {new Date(car.auctionStartDate).toLocaleDateString()}<br />
-                To: {new Date(car.auctionEndDate).toLocaleDateString()}
+                From: {formatDate(car.auctionStartDate)}<br />
+                To: {formatDate(car.auctionEndDate)}
               </td>
             </tr>
           ))}
@@ -208,7 +209,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user }) => {
               <td>
                 <strong className="text-success">${car.winningBid.toFixed(2)}</strong>
               </td>
-              <td>{new Date(car.auctionEndDate).toLocaleDateString()}</td>
+              <td>{formatDate(car.auctionEndDate)}</td>
               <td>{car.sellerName}</td>
             </tr>
           ))}

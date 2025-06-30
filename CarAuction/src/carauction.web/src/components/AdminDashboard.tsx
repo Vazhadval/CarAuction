@@ -9,6 +9,7 @@ import {
   getStatistics
 } from '../services/api';
 import { Car, User, Statistics } from '../types';
+import { formatDate } from '../utils/dateHelpers';
 
 const AdminDashboard: React.FC = () => {
   const [pendingCars, setPendingCars] = useState<Car[]>([]);
@@ -123,8 +124,8 @@ const AdminDashboard: React.FC = () => {
               <td>{car.sellerName}</td>
               <td>${car.startPrice.toFixed(2)}</td>
               <td>
-                From: {new Date(car.auctionStartDate).toLocaleDateString()}<br />
-                To: {new Date(car.auctionEndDate).toLocaleDateString()}
+                From: {formatDate(car.auctionStartDate)}<br />
+                To: {formatDate(car.auctionEndDate)}
               </td>
               <td>
                 <Button 
@@ -180,8 +181,8 @@ const AdminDashboard: React.FC = () => {
               <td>${car.startPrice.toFixed(2)}</td>
               <td>${car.currentBid ? car.currentBid.toFixed(2) : '0.00'}</td>
               <td>
-                From: {new Date(car.auctionStartDate).toLocaleDateString()}<br />
-                To: {new Date(car.auctionEndDate).toLocaleDateString()}
+                From: {formatDate(car.auctionStartDate)}<br />
+                To: {formatDate(car.auctionEndDate)}
               </td>
             </tr>
           ))}
@@ -209,7 +210,7 @@ const AdminDashboard: React.FC = () => {
             <tr key={user.id}>
               <td>{user.firstName} {user.lastName}</td>
               <td>{user.email}</td>
-              <td>{user.registeredDate ? new Date(user.registeredDate).toLocaleDateString() : 'N/A'}</td>
+              <td>{user.registeredDate ? formatDate(user.registeredDate) : 'N/A'}</td>
             </tr>
           ))}
         </tbody>
