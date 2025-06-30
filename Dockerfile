@@ -1,8 +1,7 @@
 # Use the official .NET 9 runtime as base image
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+EXPOSE 10000
 
 # Use the official .NET 9 SDK for building
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
@@ -36,6 +35,6 @@ RUN mkdir -p /app/wwwroot/uploads
 
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_URLS=http://+:10000
 
 ENTRYPOINT ["dotnet", "CarAuction.API.dll"]
