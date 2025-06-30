@@ -18,9 +18,12 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
   const [car, setCar] = useState<CarDetailsType | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [bidAmount, setBidAmount] = useState<string>('');
+  const [bidAmount, setBidAmount] = useState<number>(0);
   const [bidError, setBidError] = useState<string | null>(null);
   const [bidSuccess, setBidSuccess] = useState<boolean>(false);
+  
+  // Bid step configuration
+  const BID_STEP = 100;
   
   // Direct sale order state
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
@@ -135,7 +138,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
 
     if (!car || !user) return;
 
-    const amount = parseFloat(bidAmount);
+    const amount = bidAmount;
     
     // Validation
     if (isNaN(amount) || amount <= 0) {
@@ -162,7 +165,9 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
 
       if (success) {
         setBidSuccess(true);
-        setBidAmount('');
+        // Reset bid amount to new minimum (current bid + step)
+        const newMinBid = Math.max(car.currentBid + BID_STEP, car.startPrice + BID_STEP);
+        setBidAmount(newMinBid);
         showToast('ბიდი განთავსდა', 'თქვენი ბიდი წარმატებით განთავსდა!', 'success');
         setTimeout(() => setBidSuccess(false), 3000);
       } else {
@@ -376,6 +381,29 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
   const isAuctionOngoing = car?.status === 'OngoingAuction';
   const isUserSeller = user && car && user.id === car.sellerId;
 
+  // Bid amount management functions
+  const getMinimumBid = () => {
+    if (!car) return 0;
+    return Math.max(car.currentBid + BID_STEP, car.startPrice);
+  };
+
+  const increaseBidAmount = () => {
+    setBidAmount(prev => prev + BID_STEP);
+  };
+
+  const decreaseBidAmount = () => {
+    const minBid = getMinimumBid();
+    setBidAmount(prev => Math.max(prev - BID_STEP, minBid));
+  };
+
+  // Initialize bid amount when car data changes
+  useEffect(() => {
+    if (car && car.saleType === 'Auction') {
+      const minBid = getMinimumBid();
+      setBidAmount(minBid);
+    }
+  }, [car?.currentBid, car?.startPrice, car?.saleType]);
+
   if (loading) {
     return <div className="text-center mt-5">მანქანის დეტალები იტვირთება...</div>;
   }
@@ -556,25 +584,106 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                   })()
                 )}
                 
+                {/* Current Highest Bid Display */}
+                <div className="text-center mb-3 p-3 bg-primary bg-opacity-10 rounded border border-primary">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span className="text-muted small">მიმდინარე ბიდი:</span>
+                    <div className="d-flex align-items-center">
+                      <span className="h4 fw-bold text-primary mb-0 me-2">
+                        ${car.currentBid > 0 ? car.currentBid.toFixed(2) : car.startPrice.toFixed(2)}
+                      </span>
+                      {car.recentBids && car.recentBids.length > 0 ? (
+                        <small className="text-muted">
+                          ({car.recentBids[0].bidderName})
+                        </small>
+                      ) : (
+                        <small className="text-muted">
+                          (საწყისი ფასი)
+                        </small>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
                 <Form onSubmit={handleBidSubmit}>
                   {bidError && <Alert variant="danger">{bidError}</Alert>}
                   {bidSuccess && <Alert variant="success">ბიდი წარმატებით განთავსდა!</Alert>}
                 <Form.Group className="mb-3" controlId="bidAmount">
                   <Form.Label>თქვენი ბიდის რაოდენობა ($)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    step="0.01"
-                    min={car.currentBid > 0 ? car.currentBid + 0.01 : car.startPrice}
-                    value={bidAmount}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBidAmount(e.target.value)}
-                    required
-                  />
-                  <Form.Text className="text-muted">
-                    უნდა იყოს მიმდინარე ბიდზე მეტი: ${car.currentBid > 0 ? car.currentBid.toFixed(2) : car.startPrice.toFixed(2)}
-                  </Form.Text>
+                  <div className="input-group">
+                    <Button 
+                      variant="outline-secondary" 
+                      type="button"
+                      onClick={decreaseBidAmount}
+                      disabled={bidAmount <= getMinimumBid()}
+                      className="px-3"
+                    >
+                      <i className="bi bi-dash fs-5"></i>
+                    </Button>
+                    <Form.Control
+                      type="text"
+                      value={`$${bidAmount.toFixed(2)}`}
+                      readOnly
+                      className="text-center fw-bold bg-light"
+                      style={{ fontSize: '1.2rem', border: '2px solid #dee2e6' }}
+                    />
+                    <Button 
+                      variant="outline-secondary" 
+                      type="button"
+                      onClick={increaseBidAmount}
+                      className="px-3"
+                    >
+                      <i className="bi bi-plus fs-5"></i>
+                    </Button>
+                  </div>
+                  <div className="mt-2">
+                    <small className="text-muted">
+                      მინიმალური ბიდი: <strong>${getMinimumBid().toFixed(2)}</strong> • ნაბიჯი: <strong>${BID_STEP}</strong>
+                    </small>
+                  </div>
+                  
+                  {/* Quick bid buttons */}
+                  <div className="mt-3">
+                    <small className="text-muted d-block mb-2">სწრაფი ბიდი:</small>
+                    <div className="d-flex gap-2 flex-wrap">
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        type="button"
+                        onClick={() => setBidAmount(getMinimumBid())}
+                      >
+                        ${getMinimumBid().toFixed(2)}
+                      </Button>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        type="button"
+                        onClick={() => setBidAmount(getMinimumBid() + BID_STEP)}
+                      >
+                        ${(getMinimumBid() + BID_STEP).toFixed(2)}
+                      </Button>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        type="button"
+                        onClick={() => setBidAmount(getMinimumBid() + BID_STEP * 2)}
+                      >
+                        ${(getMinimumBid() + BID_STEP * 2).toFixed(2)}
+                      </Button>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        type="button"
+                        onClick={() => setBidAmount(getMinimumBid() + BID_STEP * 5)}
+                      >
+                        ${(getMinimumBid() + BID_STEP * 5).toFixed(2)}
+                      </Button>
+                    </div>
+                  </div>
                 </Form.Group>
-                <Button variant="primary" type="submit">
-                  ბიდის განთავსება
+                <Button variant="primary" type="submit" size="lg" className="w-100 mt-3">
+                  <i className="bi bi-hammer me-2"></i>
+                  ბიდის განთავსება - ${bidAmount.toFixed(2)}
                 </Button>
                 </Form>
               </>
