@@ -20,7 +20,9 @@ Make sure all your changes are committed and pushed to your GitHub repository.
    - **Region**: Choose closest to you
    - **Plan**: Free
 5. Click "Create Database"
-6. **IMPORTANT**: Copy the "External Database URL" from the database info page - you'll need this for the web service
+6. **IMPORTANT**: Copy the **"Internal Database URL"** from the database info page - you'll need this for the web service
+   - ⚠️ Use **Internal Database URL** (for service-to-service communication within Render)
+   - ❌ Don't use External Database URL (that's for external connections)
 
 ### 3. Create Web Service
 1. Click "New +" and select "Web Service"
@@ -34,7 +36,15 @@ Make sure all your changes are committed and pushed to your GitHub repository.
 4. Add Environment Variables:
    - `ASPNETCORE_ENVIRONMENT` = `Production`
    - `ASPNETCORE_URLS` = `http://+:10000`
-   - `DATABASE_URL` = `postgresql://carauction_user:qXFuNmPqMQRshJUxgkxQhjyuY3Z8LJ9o@dpg-d1hdugvgi27c739m74t0-a.frankfurt-postgres.render.com:5432/carauction`
+   - `DATABASE_URL` = (paste the **Internal Database URL** from step 2.6)
+   
+   **⚠️ CRITICAL**: Use **Internal Database URL** format:
+   ```
+   postgresql://carauction_user:qXFuNmPqMQRshJUxgkxQhjyuY3Z8LJ9o@dpg-d1hdugvgi27c739m74t0-a:5432/carauction
+   ```
+   **NOT** the External URL format (which includes `.frankfurt-postgres.render.com`)
+   
+   **Double-check**: No extra spaces, line breaks, or quotes around the DATABASE_URL value!
 5. Set **Health Check Path**: `/api/cars`
 6. Click "Create Web Service"
 
@@ -86,5 +96,13 @@ The service includes a health check endpoint at `/api/cars` to ensure the applic
 
 ### Troubleshooting
 - If deployment fails, check the logs in Render's dashboard
-- Ensure the DATABASE_URL is correctly copied from the PostgreSQL service
+- **Database Connection Issues**: 
+  1. Verify you're using the **Internal Database URL** (not External)
+  2. Check for extra spaces or line breaks in the DATABASE_URL environment variable
+  3. Ensure the DATABASE_URL has this exact format: `postgresql://user:password@hostname:5432/database`
+  4. Go to your database service → "Connect" tab → copy the **Internal Database URL**
 - Verify the Dockerfile builds successfully locally with: `docker build -t test .`
+
+### Database URL Formats
+- ✅ **Internal (Correct for Render services)**: `postgresql://user:pass@dpg-xyz-a:5432/db`
+- ❌ **External (Wrong for Render services)**: `postgresql://user:pass@dpg-xyz-a.region-postgres.render.com:5432/db`

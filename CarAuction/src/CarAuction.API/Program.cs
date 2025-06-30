@@ -42,13 +42,21 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
                           ?? builder.Configuration.GetConnectionString("DefaultConnection");
     
+    // Debug logging for connection string
+    Console.WriteLine($"CONNECTION STRING DEBUG:");
+    Console.WriteLine($"DATABASE_URL env var: {(Environment.GetEnvironmentVariable("DATABASE_URL") != null ? "EXISTS" : "NULL")}");
+    Console.WriteLine($"Connection string length: {connectionString?.Length ?? 0}");
+    Console.WriteLine($"Starts with postgresql://: {connectionString?.StartsWith("postgresql://") == true}");
+    
     // Check if it's a PostgreSQL connection string (for production/Render)
     if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
     {
+        Console.WriteLine("Using PostgreSQL (Npgsql)");
         options.UseNpgsql(connectionString);
     }
     else
     {
+        Console.WriteLine("Using SQL Server");
         // Fallback to SQL Server for local development
         options.UseSqlServer(connectionString);
     }
