@@ -1,6 +1,7 @@
 using CarAuction.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CarAuction.Infrastructure.Data
 {
@@ -19,6 +20,9 @@ namespace CarAuction.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // Configure DateTime UTC conversion for PostgreSQL
+            ConfigureDateTimeUtcConversion(builder);
 
             // Configure Car entity
             builder.Entity<Car>(entity =>
@@ -106,6 +110,34 @@ namespace CarAuction.Infrastructure.Data
                       .HasForeignKey(o => o.BuyerId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
+        }
+
+        private void ConfigureDateTimeUtcConversion(ModelBuilder builder)
+        {
+            // Create a DateTime to UTC converter
+            var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
+                v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime(),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+            var nullableDateTimeConverter = new ValueConverter<DateTime?, DateTime?>(
+                v => v.HasValue ? (v.Value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v.Value.ToUniversalTime()) : v,
+                v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+            // Apply to all DateTime properties
+            foreach (var entityType in builder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(DateTime))
+                    {
+                        property.SetValueConverter(dateTimeConverter);
+                    }
+                    else if (property.ClrType == typeof(DateTime?))
+                    {
+                        property.SetValueConverter(nullableDateTimeConverter);
+                    }
+                }
+            }
         }
     }
 }

@@ -36,7 +36,7 @@ namespace CarAuction.API.Services
             _logger.LogInformation("Auction Status Background Service is starting at: {time}", DateTimeOffset.Now);
             
             // Track the last time we did a full update to prevent constant looping
-            DateTime lastFullUpdateTime = DateTime.Now;
+            DateTime lastFullUpdateTime = DateTime.UtcNow;
             int consecutiveEmptyUpdates = 0;
 
             while (!stoppingToken.IsCancellationRequested)
@@ -44,7 +44,7 @@ namespace CarAuction.API.Services
                 try
                 {
                     // Log the start of each iteration with current time to track timing issues
-                    _logger.LogDebug("Background service iteration starting at local time: {time}", DateTime.Now);
+                    _logger.LogDebug("Background service iteration starting at UTC time: {time}", DateTime.UtcNow);
                     
                     var updatedCars = await UpdateCarStatuses();
                     if (updatedCars.Count > 0)
@@ -82,24 +82,24 @@ namespace CarAuction.API.Services
             var auctionService = scope.ServiceProvider.GetRequiredService<IAuctionService>();
             var carRepository = scope.ServiceProvider.GetRequiredService<ICarRepository>();
             
-            // Use local time for checking, to match the UI and AuctionService
-            var now = DateTime.Now;
+            // Use UTC time for checking, then convert stored dates to local for comparison
+            var now = DateTime.UtcNow;
             var updatedCars = new List<(int Id, string Status)>();
             
             try
             {
-                _logger.LogDebug("Starting car status update check at local time {localTime}, UTC time {utcTime}", 
-                    now, DateTime.UtcNow);
+                _logger.LogDebug("Starting car status update check at UTC time {utcTime}", 
+                    now);
                 
                 // First, prioritize cars that should be starting or ending soon
                 // Get upcoming auctions that should be starting now
                 var upcomingCars = await carRepository.GetCarsByStatusAsync(CarStatus.UpcomingAuction);
                 
-                // Look for auctions that are exactly at or past their start time
-                foreach (var car in upcomingCars.Where(c => c.AuctionStartDate.ToLocalTime() <= now))
+                // Look for auctions that are exactly at or past their start time (comparing UTC to UTC)
+                foreach (var car in upcomingCars.Where(c => c.AuctionStartDate <= now))
                 {
-                    _logger.LogInformation("Car {carId} needs status update - Start time UTC:{startTime}/Local:{localStartTime} has passed, current local time: {now}", 
-                        car.Id, car.AuctionStartDate, car.AuctionStartDate.ToLocalTime(), now);
+                    _logger.LogInformation("Car {carId} needs status update - Start time UTC:{startTime} has passed, current UTC time: {now}", 
+                        car.Id, car.AuctionStartDate, now);
                     
                     if (await auctionService.UpdateCarStatusAsync(car.Id))
                     {
@@ -115,10 +115,10 @@ namespace CarAuction.API.Services
 
                 // Get ongoing auctions that should be ending now
                 var ongoingCars = await carRepository.GetCarsByStatusAsync(CarStatus.OngoingAuction);
-                foreach (var car in ongoingCars.Where(c => c.AuctionEndDate.ToLocalTime() <= now))
+                foreach (var car in ongoingCars.Where(c => c.AuctionEndDate <= now))
                 {
-                    _logger.LogInformation("Car {carId} needs status update - End time UTC:{endTime}/Local:{localEndTime} has passed, current local time: {now}", 
-                        car.Id, car.AuctionEndDate, car.AuctionEndDate.ToLocalTime(), now);
+                    _logger.LogInformation("Car {carId} needs status update - End time UTC:{endTime} has passed, current UTC time: {now}", 
+                        car.Id, car.AuctionEndDate, now);
                         
                     if (await auctionService.UpdateCarStatusAsync(car.Id))
                     {

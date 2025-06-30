@@ -68,8 +68,8 @@ namespace CarAuction.Application.Services
         
         private async Task<int> UpdateCarStatuses(List<Car> cars)
         {
-            // Simply use Now for all comparisons
-            var now = DateTime.Now;
+            // Simply use UtcNow for all comparisons
+            var now = DateTime.UtcNow;
             var updatedCount = 0;
             
             foreach (var car in cars)
@@ -106,7 +106,7 @@ namespace CarAuction.Application.Services
         private async Task<bool> UpdateCarStatus(Car car)
         {
             // Use current time for all comparisons - simpler approach
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             
             var needsUpdate = false;
             var oldStatus = car.Status;
@@ -118,7 +118,7 @@ namespace CarAuction.Application.Services
             // Log the current state for debugging
             Console.WriteLine($"Checking car {car.Id} status: Current={car.Status}, Now={now}, StartDate={startDate}, EndDate={endDate}");
             
-            // Simplified status transitions using DateTime.Now for all comparisons
+            // Simplified status transitions using DateTime.UtcNow for all comparisons
             if (car.Status == CarStatus.UpcomingAuction && now >= startDate)
             {
                 car.Status = CarStatus.OngoingAuction;
@@ -306,7 +306,7 @@ namespace CarAuction.Application.Services
                 return false;
 
             // Double check the auction is active based on current time
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             
             if (now < car.AuctionStartDate || now > car.AuctionEndDate)
                 return false;
