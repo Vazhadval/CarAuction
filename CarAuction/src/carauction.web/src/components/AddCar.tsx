@@ -5,7 +5,7 @@ import { addCar, uploadCarImages } from '../services/api';
 import { UploadResult } from '../types';
 import { useToast } from './ToastProvider';
 import { getAbsoluteImageUrl } from '../utils/imageHelper';
-import { getCurrentGeorgianTime, georgianInputToUtcIso, utcIsoToGeorgianInput } from '../utils/dateHelpers';
+import { getCurrentGeorgianTime, georgianInputToDate, dateToGeorgianInput } from '../utils/dateHelpers';
 
 const AddCar: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -35,24 +35,19 @@ const AddCar: React.FC = () => {
 
   // Initialize default Georgian time dates
   useEffect(() => {
-    const georgianNow = getCurrentGeorgianTime();
-    const georgianStartDate = new Date(georgianNow.getTime() + (60 * 60 * 1000)); // 1 hour from now
-    const georgianEndDate = new Date(georgianNow.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days from now
+    // Get current time and add 1 hour for start, 7 days for end
+    const now = getCurrentGeorgianTime();
+    const oneHourLater = new Date(now.getTime() + (60 * 60 * 1000));
+    const sevenDaysLater = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
     
-    // Format for datetime-local input (YYYY-MM-DDTHH:mm)
-    const formatForInput = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    };
+    // Format for datetime-local inputs
+    const startForInput = dateToGeorgianInput(oneHourLater);
+    const endForInput = dateToGeorgianInput(sevenDaysLater);
 
     setFormData(prev => ({
       ...prev,
-      auctionStartDate: formatForInput(georgianStartDate),
-      auctionEndDate: formatForInput(georgianEndDate)
+      auctionStartDate: startForInput,
+      auctionEndDate: endForInput
     }));
   }, []);
 
@@ -138,9 +133,9 @@ const AddCar: React.FC = () => {
     // Validate sale type specific fields
     if (formData.saleType === 'Auction') {
       // Validate dates for auction using Georgian time
-      const startDateInput = new Date(formData.auctionStartDate); // This is Georgian time from input
-      const endDateInput = new Date(formData.auctionEndDate); // This is Georgian time from input
-      const georgianNow = getCurrentGeorgianTime(); // Current Georgian time
+      const startDateInput = georgianInputToDate(formData.auctionStartDate);
+      const endDateInput = georgianInputToDate(formData.auctionEndDate);
+      const georgianNow = getCurrentGeorgianTime();
       
       console.log(`Current Georgian time: ${georgianNow.toISOString()}`);
       console.log(`Start time (Georgian input): ${startDateInput.toISOString()}`);
@@ -211,9 +206,9 @@ const AddCar: React.FC = () => {
           year: Number(formData.year),
           imageUrls: imageUrls,
           primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined,
-          // Convert Georgian time inputs to UTC ISO strings
-          auctionStartDate: georgianInputToUtcIso(formData.auctionStartDate),
-          auctionEndDate: georgianInputToUtcIso(formData.auctionEndDate)
+          // Convert Georgian time inputs to ISO strings for API
+          auctionStartDate: georgianInputToDate(formData.auctionStartDate).toISOString(),
+          auctionEndDate: georgianInputToDate(formData.auctionEndDate).toISOString()
         };
       }
 
