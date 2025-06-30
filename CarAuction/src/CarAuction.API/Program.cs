@@ -110,20 +110,23 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             
             Console.WriteLine($"Converted to Npgsql format (masked): Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password=***;SSL Mode=Require;Trust Server Certificate=true");
             
-            options.UseNpgsql(npgsqlConnectionString);
+            options.UseNpgsql(npgsqlConnectionString)
+                   .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error converting connection string: {ex.Message}");
             // Fallback to original connection string
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(connectionString)
+                   .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         }
     }
     else
     {
         Console.WriteLine("Using SQL Server");
         // Fallback to SQL Server for local development
-        options.UseSqlServer(connectionString);
+        options.UseSqlServer(connectionString)
+               .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
     }
 });
 
