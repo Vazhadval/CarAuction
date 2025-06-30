@@ -16,3 +16,4 @@ services:
   
   - type: pserv
     name: carauction-db
+    plan: free
