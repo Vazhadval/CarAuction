@@ -8,7 +8,10 @@ import {
   UserRegistration, 
   LoginCredentials,
   Statistics,
-  User
+  User,
+  CreateOrderDto,
+  Order,
+  PurchasedCar
 } from '../types';
 import { API_CONFIG } from '../config/apiConfig';
 
@@ -83,6 +86,19 @@ export const placeBid = (bidData: PlaceBidDto) => {
   return apiClient.post<boolean>('/cars/bid', bidData);
 };
 
+// Direct Sale API
+export const getDirectSaleCars = () => {
+  return apiClient.get<Car[]>('/cars/direct-sale');
+};
+
+export const buyDirectSaleCar = (orderData: CreateOrderDto) => {
+  return apiClient.post<Order>('/cars/buy', orderData);
+};
+
+export const getUserPurchases = () => {
+  return apiClient.get<PurchasedCar[]>('/cars/purchased');
+};
+
 // Admin API
 export const getPendingCars = () => {
   return apiClient.get<Car[]>('/admin/cars/pending');
@@ -102,6 +118,15 @@ export const getUsers = () => {
 
 export const getStatistics = () => {
   return apiClient.get<Statistics>('/admin/statistics');
+};
+
+// Admin Direct Sale API
+export const getAdminDirectSales = () => {
+  return apiClient.get<Car[]>('/admin/cars/direct-sale');
+};
+
+export const getAdminOrders = () => {
+  return apiClient.get<Order[]>('/admin/orders');
 };
 
 export default apiClient;

@@ -68,5 +68,47 @@ namespace CarAuction.Application.Interfaces
         /// <param name="bidderId">The ID of the bidder</param>
         /// <returns>True if the bid was placed successfully, false otherwise</returns>
         Task<bool> PlaceBidWithConcurrencyProtection(PlaceBidDto bidDto, string bidderId);
+
+        // Direct sales methods
+        /// <summary>
+        /// Gets cars available for direct sale
+        /// </summary>
+        /// <returns>List of cars available for direct purchase</returns>
+        Task<List<CarDto>> GetCarsForDirectSaleAsync();
+
+        /// <summary>
+        /// Creates an order for direct purchase of a car
+        /// </summary>
+        /// <param name="orderDto">Order details</param>
+        /// <param name="buyerId">ID of the buyer</param>
+        /// <returns>True if order was created successfully</returns>
+        Task<bool> CreateDirectPurchaseOrderAsync(CreateOrderDto orderDto, string buyerId);
+
+        /// <summary>
+        /// Gets orders made by a specific user
+        /// </summary>
+        /// <param name="userId">ID of the user</param>
+        /// <returns>List of orders made by the user</returns>
+        Task<List<OrderDto>> GetUserOrdersAsync(string userId);
+
+        /// <summary>
+        /// Gets cars purchased directly by a user
+        /// </summary>
+        /// <param name="userId">ID of the user</param>
+        /// <returns>List of directly purchased cars</returns>
+        Task<List<PurchasedCarDto>> GetPurchasedCarsByUserAsync(string userId);
+
+        /// <summary>
+        /// Confirms an order (admin action)
+        /// </summary>
+        /// <param name="orderId">ID of the order to confirm</param>
+        /// <returns>True if order was confirmed successfully</returns>
+        Task<bool> ConfirmOrderAsync(int orderId);
+
+        /// <summary>
+        /// Gets all orders (admin view)
+        /// </summary>
+        /// <returns>List of all orders</returns>
+        Task<List<OrderDto>> GetAllOrdersAsync();
     }
 }

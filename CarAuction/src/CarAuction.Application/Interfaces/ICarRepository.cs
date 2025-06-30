@@ -8,6 +8,7 @@ namespace CarAuction.Application.Interfaces
     {
         Task<List<Car>> GetAllCarsAsync();
         Task<List<Car>> GetCarsByStatusAsync(CarStatus status);
+        Task<List<Car>> GetCarsBySaleTypeAsync(SaleType saleType);
         Task<Car?> GetCarByIdAsync(int id);
         Task<Car> AddCarAsync(Car car);
         Task<Car> UpdateCarAsync(Car car);

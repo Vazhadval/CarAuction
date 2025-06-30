@@ -12,11 +12,13 @@ namespace CarAuction.Application.Services
     {
         private readonly ICarRepository _carRepository;
         private readonly IBidRepository _bidRepository;
+        private readonly IOrderRepository _orderRepository;
 
-        public AuctionService(ICarRepository carRepository, IBidRepository bidRepository)
+        public AuctionService(ICarRepository carRepository, IBidRepository bidRepository, IOrderRepository orderRepository)
         {
             _carRepository = carRepository;
             _bidRepository = bidRepository;
+            _orderRepository = orderRepository;
         }
 
         public async Task<List<CarDto>> GetAllCarsAsync()
@@ -244,6 +246,9 @@ namespace CarAuction.Application.Services
             var seller = await _carRepository.GetSellerByIdAsync(sellerId);
             if (seller == null)
                 return null;
+
+            // Parse sale type
+            var saleType = Enum.TryParse<SaleType>(carDto.SaleType, out var parsedSaleType) ? parsedSaleType : SaleType.Auction;
                 
             var car = new Car
             {
@@ -251,13 +256,15 @@ namespace CarAuction.Application.Services
                 Model = carDto.Model,
                 Year = carDto.Year,
                 StartPrice = carDto.StartPrice,
+                FixedPrice = carDto.FixedPrice,
                 Description = carDto.Description,
                 PhotoUrl = carDto.PhotoUrl,
                 AuctionStartDate = carDto.AuctionStartDate,
                 AuctionEndDate = carDto.AuctionEndDate,
+                SaleType = saleType,
                 SellerId = sellerId,
                 Seller = seller,
-                Status = CarStatus.PendingApproval,
+                Status = saleType == SaleType.DirectSale ? CarStatus.AvailableForSale : CarStatus.PendingApproval,
                 Images = new List<CarImage>()
             };
             
@@ -477,6 +484,7 @@ namespace CarAuction.Application.Services
                 Model = car.Model,
                 Year = car.Year,
                 StartPrice = car.StartPrice,
+                FixedPrice = car.FixedPrice,
                 PhotoUrl = car.PhotoUrl, // Legacy support
                 Images = car.Images?
                     .Select(i => new CarImageDto 
@@ -489,9 +497,11 @@ namespace CarAuction.Application.Services
                 AuctionStartDate = car.AuctionStartDate,
                 AuctionEndDate = car.AuctionEndDate,
                 Status = car.Status.ToString(),
+                SaleType = car.SaleType.ToString(),
                 CurrentBid = highestBid?.Amount ?? 0,
                 SellerName = $"{car.Seller?.FirstName} {car.Seller?.LastName}",
-                WinnerName = car.Winner != null ? $"{car.Winner.FirstName} {car.Winner.LastName}" : null
+                WinnerName = car.Winner != null ? $"{car.Winner.FirstName} {car.Winner.LastName}" : null,
+                BuyerName = car.Buyer != null ? $"{car.Buyer.FirstName} {car.Buyer.LastName}" : null
             };
         }
 
@@ -506,6 +516,7 @@ namespace CarAuction.Application.Services
                 Model = car.Model,
                 Year = car.Year,
                 StartPrice = car.StartPrice,
+                FixedPrice = car.FixedPrice,
                 PhotoUrl = car.PhotoUrl, // Legacy support
                 Images = car.Images?
                     .Select(i => new CarImageDto 
@@ -519,9 +530,11 @@ namespace CarAuction.Application.Services
                 AuctionStartDate = car.AuctionStartDate,
                 AuctionEndDate = car.AuctionEndDate,
                 Status = car.Status.ToString(),
+                SaleType = car.SaleType.ToString(),
                 CurrentBid = highestBid?.Amount ?? 0,
                 SellerName = $"{car.Seller?.FirstName} {car.Seller?.LastName}",
                 WinnerName = car.Winner != null ? $"{car.Winner.FirstName} {car.Winner.LastName}" : null,
+                BuyerName = car.Buyer != null ? $"{car.Buyer.FirstName} {car.Buyer.LastName}" : null,
                 BidCount = car.Bids?.Count ?? 0,
                 RecentBids = car.Bids?
                     .OrderByDescending(b => b.PlacedAt)
@@ -755,6 +768,155 @@ namespace CarAuction.Application.Services
             }
             
             return false;
+        }
+
+        // Direct Sales Implementation
+        public async Task<List<CarDto>> GetCarsForDirectSaleAsync()
+        {
+            var cars = await _carRepository.GetCarsBySaleTypeAsync(SaleType.DirectSale);
+            var availableCars = cars.Where(c => c.Status == CarStatus.AvailableForSale).ToList();
+            
+            return availableCars.Select(c => MapToCarDto(c)).ToList();
+        }
+
+        public async Task<bool> CreateDirectPurchaseOrderAsync(CreateOrderDto orderDto, string buyerId)
+        {
+            var car = await _carRepository.GetCarByIdAsync(orderDto.CarId);
+            if (car == null || car.SaleType != SaleType.DirectSale || car.Status != CarStatus.AvailableForSale)
+                return false;
+
+            // Check if car is already sold or if user already has an order for this car
+            if (await _orderRepository.HasUserOrderedCarAsync(orderDto.CarId, buyerId))
+                return false;
+
+            var buyer = await _carRepository.GetSellerByIdAsync(buyerId); // Reusing method to get user
+            if (buyer == null)
+                return false;
+
+            var order = new Order
+            {
+                CarId = orderDto.CarId,
+                BuyerId = buyerId,
+                PurchasePrice = car.FixedPrice ?? car.StartPrice,
+                OrderDate = DateTime.UtcNow,
+                Status = OrderStatus.Pending,
+                PersonalNumber = orderDto.PersonalNumber,
+                MobilePhone = orderDto.MobilePhone,
+                Email = orderDto.Email,
+                FullName = orderDto.FullName,
+                Address = orderDto.Address,
+                Car = car,
+                Buyer = buyer
+            };
+
+            await _orderRepository.CreateOrderAsync(order);
+
+            // Mark car as sold and set buyer
+            car.Status = CarStatus.Sold;
+            car.BuyerId = buyerId;
+            await _carRepository.UpdateCarAsync(car);
+
+            return true;
+        }
+
+        public async Task<List<OrderDto>> GetUserOrdersAsync(string userId)
+        {
+            var orders = await _orderRepository.GetOrdersByUserAsync(userId);
+            
+            return orders.Select(order => new OrderDto
+            {
+                Id = order.Id,
+                PurchasePrice = order.PurchasePrice,
+                OrderDate = order.OrderDate,
+                Status = order.Status.ToString(),
+                PersonalNumber = order.PersonalNumber,
+                MobilePhone = order.MobilePhone,
+                Email = order.Email,
+                FullName = order.FullName,
+                Address = order.Address,
+                CarId = order.CarId,
+                CarName = order.Car.Name,
+                CarModel = order.Car.Model,
+                CarYear = order.Car.Year,
+                SellerName = $"{order.Car.Seller?.FirstName} {order.Car.Seller?.LastName}",
+                CarImages = order.Car.Images?
+                    .Select(i => new CarImageDto 
+                    { 
+                        Id = i.Id, 
+                        ImageUrl = i.ImageUrl, 
+                        IsPrimary = i.IsPrimary 
+                    })
+                    .ToList() ?? new List<CarImageDto>()
+            }).ToList();
+        }
+
+        public async Task<List<PurchasedCarDto>> GetPurchasedCarsByUserAsync(string userId)
+        {
+            var orders = await _orderRepository.GetOrdersByUserAsync(userId);
+            
+            return orders.Select(order => new PurchasedCarDto
+            {
+                Id = order.Car.Id,
+                Name = order.Car.Name,
+                Model = order.Car.Model,
+                Year = order.Car.Year,
+                PurchasePrice = order.PurchasePrice,
+                PhotoUrl = order.Car.PhotoUrl,
+                Images = order.Car.Images?
+                    .Select(i => new CarImageDto 
+                    { 
+                        Id = i.Id, 
+                        ImageUrl = i.ImageUrl, 
+                        IsPrimary = i.IsPrimary 
+                    })
+                    .ToList() ?? new List<CarImageDto>(),
+                PurchaseDate = order.OrderDate,
+                SellerName = $"{order.Car.Seller?.FirstName} {order.Car.Seller?.LastName}",
+                OrderStatus = order.Status.ToString()
+            }).ToList();
+        }
+
+        public async Task<bool> ConfirmOrderAsync(int orderId)
+        {
+            var order = await _orderRepository.GetOrderByIdAsync(orderId);
+            if (order == null || order.Status != OrderStatus.Pending)
+                return false;
+
+            order.Status = OrderStatus.Confirmed;
+            await _orderRepository.UpdateOrderAsync(order);
+
+            return true;
+        }
+
+        public async Task<List<OrderDto>> GetAllOrdersAsync()
+        {
+            var orders = await _orderRepository.GetAllOrdersAsync();
+            
+            return orders.Select(order => new OrderDto
+            {
+                Id = order.Id,
+                PurchasePrice = order.PurchasePrice,
+                OrderDate = order.OrderDate,
+                Status = order.Status.ToString(),
+                PersonalNumber = order.PersonalNumber,
+                MobilePhone = order.MobilePhone,
+                Email = order.Email,
+                FullName = order.FullName,
+                Address = order.Address,
+                CarId = order.CarId,
+                CarName = order.Car.Name,
+                CarModel = order.Car.Model,
+                CarYear = order.Car.Year,
+                SellerName = $"{order.Car.Seller?.FirstName} {order.Car.Seller?.LastName}",
+                CarImages = order.Car.Images?
+                    .Select(i => new CarImageDto 
+                    { 
+                        Id = i.Id, 
+                        ImageUrl = i.ImageUrl, 
+                        IsPrimary = i.IsPrimary 
+                    })
+                    .ToList() ?? new List<CarImageDto>()
+            }).ToList();
         }
     }
 }

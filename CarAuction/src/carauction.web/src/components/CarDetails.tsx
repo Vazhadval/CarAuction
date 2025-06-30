@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, Badge, Button, Form, Row, Col, Alert, ListGroup } from 'react-bootstrap';
-import { getCarDetails } from '../services/api';
-import { CarDetails as CarDetailsType, User } from '../types';
+import { Card, Badge, Button, Form, Row, Col, Alert, ListGroup, Modal } from 'react-bootstrap';
+import { getCarDetails, buyDirectSaleCar } from '../services/api';
+import { CarDetails as CarDetailsType, User, CreateOrderDto } from '../types';
 import signalRService from '../services/signalRService';
 import { getAbsoluteImageUrl } from '../utils/imageHelper';
 import ImageCarousel from './ImageCarousel';
@@ -21,6 +21,20 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
   const [bidAmount, setBidAmount] = useState<string>('');
   const [bidError, setBidError] = useState<string | null>(null);
   const [bidSuccess, setBidSuccess] = useState<boolean>(false);
+  
+  // Direct sale order state
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
+  const [orderData, setOrderData] = useState<CreateOrderDto>({
+    carId: 0,
+    personalNumber: '',
+    mobile: '',
+    email: user?.email || '',
+    address: '',
+    notes: ''
+  });
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [orderLoading, setOrderLoading] = useState<boolean>(false);
+  
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -160,6 +174,49 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
       setBidError(errorMessage);
       showToast('შეცდომა', errorMessage, 'error');
       console.error('Error placing bid:', err);
+    }
+  };
+
+  // Direct sale order handlers
+  const handleOrderDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setOrderData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleShowOrderModal = () => {
+    if (car) {
+      setOrderData(prev => ({ ...prev, carId: car.id }));
+      setShowOrderModal(true);
+    }
+  };
+
+  const handleCloseOrderModal = () => {
+    setShowOrderModal(false);
+    setOrderError(null);
+  };
+
+  const handleOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!car || !user) return;
+
+    setOrderLoading(true);
+    setOrderError(null);
+
+    try {
+      // Place direct sale order
+      await buyDirectSaleCar(orderData);
+      setShowOrderModal(false);
+      showToast('Purchase Successful', 'Your order has been placed successfully!', 'success');
+      
+      // Refresh car details to show it's been purchased
+      const response = await getCarDetails(Number(id));
+      setCar(response.data);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to place order. Please try again.';
+      setOrderError(errorMessage);
+      showToast('Order Failed', errorMessage, 'error');
+    } finally {
+      setOrderLoading(false);
     }
   };
 
@@ -328,7 +385,8 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
   }
 
   return (
-    <Row className="mt-4">
+    <>
+      <Row className="mt-4">
       <Col md={8}>
         <Card>
           {car.images && car.images.length > 0 ? (
@@ -352,29 +410,53 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             
             <Row className="mt-4">
               <Col md={6}>
-                <strong>საწყისი ფასი:</strong> ${car.startPrice.toFixed(2)}
+                <strong>Sale Type:</strong> {car.saleType === 'DirectSale' ? 'Direct Sale' : 'Auction'}
               </Col>
               <Col md={6}>
-                <strong>მიმდინარე ბიდი:</strong> ${car.currentBid.toFixed(2) || car.startPrice.toFixed(2)}
-              </Col>
-              <Col md={6} className="mt-2">
-                <strong>აუქციონის დაწყება:</strong> {formatDate(car.auctionStartDate)}
-              </Col>
-              <Col md={6} className="mt-2">
-                <strong>აუქციონის დასრულება:</strong> {formatDate(car.auctionEndDate)}
-              </Col>
-              <Col md={6} className="mt-2">
                 <strong>გამყიდველი:</strong> {car.sellerName}
               </Col>
-              <Col md={6} className="mt-2">
-                <strong>სულ ბიდები:</strong> {car.bidCount}
-              </Col>
+              {car.saleType === 'DirectSale' ? (
+                <>
+                  <Col md={6} className="mt-2">
+                    <strong>Price:</strong> ${car.fixedPrice?.toFixed(2)}
+                  </Col>
+                  {car.buyerName && (
+                    <Col md={6} className="mt-2">
+                      <strong>Buyer:</strong> {car.buyerName}
+                    </Col>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Col md={6} className="mt-2">
+                    <strong>საწყისი ფასი:</strong> ${car.startPrice.toFixed(2)}
+                  </Col>
+                  <Col md={6} className="mt-2">
+                    <strong>მიმდინარე ბიდი:</strong> ${car.currentBid.toFixed(2) || car.startPrice.toFixed(2)}
+                  </Col>
+                  <Col md={6} className="mt-2">
+                    <strong>აუქციონის დაწყება:</strong> {formatDate(car.auctionStartDate)}
+                  </Col>
+                  <Col md={6} className="mt-2">
+                    <strong>აუქციონის დასრულება:</strong> {formatDate(car.auctionEndDate)}
+                  </Col>
+                  <Col md={6} className="mt-2">
+                    <strong>სულ ბიდები:</strong> {car.bidCount}
+                  </Col>
+                  {car.winnerName && (
+                    <Col md={6} className="mt-2">
+                      <strong>Winner:</strong> {car.winnerName}
+                    </Col>
+                  )}
+                </>
+              )}
             </Row>
           </Card.Body>
         </Card>
 
-        {/* Bid History */}
-        <Card className="mt-4">
+        {/* Bid History - Only show for auctions */}
+        {car.saleType === 'Auction' && (
+          <Card className="mt-4">
           <Card.Header>ბოლო ბიდები</Card.Header>
           <ListGroup variant="flush">
             {car.recentBids && car.recentBids.length > 0 ? (
@@ -411,20 +493,48 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             )}
           </ListGroup>
         </Card>
+        )}
       </Col>
 
       <Col md={4}>
-        {/* Bidding Panel */}
+        {/* Bidding/Buying Panel */}
         <Card>
-          <Card.Header>Place a Bid</Card.Header>
+          <Card.Header>
+            {car.saleType === 'DirectSale' ? 'Buy This Car' : 'Place a Bid'}
+          </Card.Header>
           <Card.Body>
             {!user ? (
-              <Alert variant="info">Please log in to place a bid</Alert>
+              <Alert variant="info">
+                {car.saleType === 'DirectSale' ? 'Please log in to buy this car' : 'Please log in to place a bid'}
+              </Alert>
             ) : isUserSeller ? (
-              <Alert variant="warning">You cannot bid on your own car</Alert>
+              <Alert variant="warning">You cannot buy/bid on your own car</Alert>
+            ) : car.saleType === 'DirectSale' ? (
+              // Direct Sale Section
+              <>
+                {car.status === 'Sold' || car.buyerName ? (
+                  <Alert variant="info">This car has already been sold to {car.buyerName}</Alert>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <h5 className="text-primary">${car.fixedPrice?.toFixed(2)}</h5>
+                      <p className="text-muted">Fixed Price</p>
+                    </div>
+                    <Button 
+                      variant="success" 
+                      size="lg" 
+                      className="w-100"
+                      onClick={handleShowOrderModal}
+                    >
+                      Buy Now
+                    </Button>
+                  </>
+                )}
+              </>
             ) : !isAuctionOngoing ? (
               <Alert variant="info">This auction is not currently active</Alert>
             ) : (
+              // Auction Section
               <>
                 {/* Show winning status in bidding panel */}
                 {user && car.recentBids && car.recentBids.length > 0 && (
@@ -565,6 +675,102 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         </Card>
       </Col>
     </Row>
+
+    {/* Order Modal for Direct Sales */}
+    {car && (
+      <Modal show={showOrderModal} onHide={handleCloseOrderModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Complete Your Purchase</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="mb-3">
+            <h5>{car.name} {car.model} ({car.year})</h5>
+            <p className="text-muted">Price: ${car.fixedPrice?.toFixed(2)}</p>
+          </div>
+          
+          {orderError && <Alert variant="danger">{orderError}</Alert>}
+          
+          <Form onSubmit={handleOrderSubmit}>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="personalNumber">
+                  <Form.Label>Personal Number <span className="text-danger">*</span></Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="personalNumber"
+                    value={orderData.personalNumber}
+                    onChange={handleOrderDataChange}
+                    required
+                    placeholder="Enter your personal number"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3" controlId="mobile">
+                  <Form.Label>Mobile Number <span className="text-danger">*</span></Form.Label>
+                  <Form.Control
+                    type="tel"
+                    name="mobile"
+                    value={orderData.mobile}
+                    onChange={handleOrderDataChange}
+                    required
+                    placeholder="Enter your mobile number"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Form.Group className="mb-3" controlId="email">
+              <Form.Label>Email <span className="text-danger">*</span></Form.Label>
+              <Form.Control
+                type="email"
+                name="email"
+                value={orderData.email}
+                onChange={handleOrderDataChange}
+                required
+                placeholder="Enter your email address"
+              />
+            </Form.Group>
+            
+            <Form.Group className="mb-3" controlId="address">
+              <Form.Label>Address</Form.Label>
+              <Form.Control
+                type="text"
+                name="address"
+                value={orderData.address}
+                onChange={handleOrderDataChange}
+                placeholder="Enter your address (optional)"
+              />
+            </Form.Group>
+            
+            <Form.Group className="mb-3" controlId="notes">
+              <Form.Label>Notes</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                name="notes"
+                value={orderData.notes}
+                onChange={handleOrderDataChange}
+                placeholder="Any additional notes (optional)"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseOrderModal}>
+            Cancel
+          </Button>
+          <Button 
+            variant="success" 
+            onClick={handleOrderSubmit}
+            disabled={orderLoading}
+          >
+            {orderLoading ? 'Processing...' : `Buy for $${car.fixedPrice?.toFixed(2)}`}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    )}
+    </>
   );
 };
 

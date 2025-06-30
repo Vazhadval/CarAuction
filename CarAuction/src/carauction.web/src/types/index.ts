@@ -21,13 +21,17 @@ export interface Car {
   model: string;
   year: number;
   startPrice: number;
+  fixedPrice?: number;  // For direct sale
   photoUrl?: string;  // Legacy field, now optional
   images: CarImage[];
   auctionStartDate: string;
   auctionEndDate: string;
   status: string;
+  saleType: string;  // 'Auction' or 'DirectSale'
   currentBid: number;
   sellerName: string;
+  winnerName?: string;  // Name of the auction winner
+  buyerName?: string;   // Name of the direct buyer
   sellerId?: string;
 }
 
@@ -51,12 +55,14 @@ export interface CreateCarDto {
   model: string;
   year: number;
   startPrice: number;
+  fixedPrice?: number;  // For direct sale
   description: string;
   photoUrl?: string;
   imageUrls: string[];
   primaryImageIndex?: number;
   auctionStartDate: string;
   auctionEndDate: string;
+  saleType: string;  // 'Auction' or 'DirectSale'
 }
 
 export interface Bid {
@@ -115,6 +121,44 @@ export interface UserRegistration {
 export interface LoginCredentials {
   email: string;
   password: string;
+}
+
+export interface CreateOrderDto {
+  carId: number;
+  personalNumber: string;
+  mobile: string;
+  email: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Order {
+  id: number;
+  carId: number;
+  carName: string;
+  carModel: string;
+  carYear: number;
+  price: number;
+  personalNumber: string;
+  mobile: string;
+  email: string;
+  address?: string;
+  notes?: string;
+  status: string;
+  createdAt: string;
+  buyerName: string;
+}
+
+export interface PurchasedCar {
+  id: number;
+  name: string;
+  model: string;
+  year: number;
+  price: number;
+  photoUrl?: string;
+  images: CarImage[];
+  purchaseDate: string;
+  sellerName: string;
 }
 
 export interface Statistics {

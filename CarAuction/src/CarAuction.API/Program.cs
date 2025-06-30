@@ -84,6 +84,7 @@ builder.Services.AddAuthentication(options =>
 // Register Repositories and Services
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<IBidRepository, BidRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IAuctionService, AuctionService>();
 
 // Register Background Services

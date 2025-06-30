@@ -22,6 +22,7 @@ namespace CarAuction.Infrastructure.Repositories
             return await _context.Cars
                 .Include(c => c.Seller)
                 .Include(c => c.Winner)
+                .Include(c => c.Buyer)
                 .Include(c => c.Bids)
                 .Include(c => c.Images)
                 .ToListAsync();
@@ -33,6 +34,19 @@ namespace CarAuction.Infrastructure.Repositories
                 .Where(c => c.Status == status)
                 .Include(c => c.Seller)
                 .Include(c => c.Winner)
+                .Include(c => c.Buyer)
+                .Include(c => c.Bids)
+                .Include(c => c.Images)
+                .ToListAsync();
+        }
+
+        public async Task<List<Car>> GetCarsBySaleTypeAsync(SaleType saleType)
+        {
+            return await _context.Cars
+                .Where(c => c.SaleType == saleType)
+                .Include(c => c.Seller)
+                .Include(c => c.Winner)
+                .Include(c => c.Buyer)
                 .Include(c => c.Bids)
                 .Include(c => c.Images)
                 .ToListAsync();
@@ -43,6 +57,7 @@ namespace CarAuction.Infrastructure.Repositories
             return await _context.Cars
                 .Include(c => c.Seller)
                 .Include(c => c.Winner)
+                .Include(c => c.Buyer)
                 .Include(c => c.Bids)
                 .ThenInclude(b => b.Bidder)
                 .Include(c => c.Images)

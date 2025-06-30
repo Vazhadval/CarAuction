@@ -12,10 +12,12 @@ const AddCar: React.FC = () => {
     model: '',
     year: new Date().getFullYear(),
     startPrice: '',
+    fixedPrice: '',
     description: '',
     photoUrl: '', // Legacy field, kept for compatibility
     auctionStartDate: '',
-    auctionEndDate: ''
+    auctionEndDate: '',
+    saleType: 'Auction' // Default to Auction
   });
   const [uploadedImages, setUploadedImages] = useState<UploadResult[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -109,25 +111,35 @@ const AddCar: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    // Validate dates - ensure they're processed in UTC to match backend
-    const startDate = new Date(formData.auctionStartDate);
-    const endDate = new Date(formData.auctionEndDate);
-    const now = new Date();
-    
-    console.log(`Current time: ${now.toISOString()}`);
-    console.log(`Start time: ${startDate.toISOString()}`);
-    console.log(`End time: ${endDate.toISOString()}`);
+    // Validate sale type specific fields
+    if (formData.saleType === 'Auction') {
+      // Validate dates for auction - ensure they're processed in UTC to match backend
+      const startDate = new Date(formData.auctionStartDate);
+      const endDate = new Date(formData.auctionEndDate);
+      const now = new Date();
+      
+      console.log(`Current time: ${now.toISOString()}`);
+      console.log(`Start time: ${startDate.toISOString()}`);
+      console.log(`End time: ${endDate.toISOString()}`);
 
-    if (startDate < now) {
-      setError('Auction start date must be in the future');
-      setLoading(false);
-      return;
-    }
+      if (startDate < now) {
+        setError('Auction start date must be in the future');
+        setLoading(false);
+        return;
+      }
 
-    if (endDate <= startDate) {
-      setError('Auction end date must be after the start date');
-      setLoading(false);
-      return;
+      if (endDate <= startDate) {
+        setError('Auction end date must be after the start date');
+        setLoading(false);
+        return;
+      }
+    } else if (formData.saleType === 'DirectSale') {
+      // Validate fixed price
+      if (!formData.fixedPrice || parseFloat(formData.fixedPrice) <= 0) {
+        setError('Please enter a valid fixed price for direct sale');
+        setLoading(false);
+        return;
+      }
     }
 
     // Check if we have at least one image
@@ -148,17 +160,42 @@ const AddCar: React.FC = () => {
       // Get all image URLs from the uploaded images
       const imageUrls = uploadedImages.map(img => img.url || '').filter(url => url !== '');
       
-      const carData = {
-        ...formData,
-        startPrice: parseFloat(formData.startPrice),
-        year: Number(formData.year),
-        imageUrls: imageUrls,
-        primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined
-      };
+      let carData;
+      
+      if (formData.saleType === 'DirectSale') {
+        // For direct sales, use fixed price as starting price and set default auction dates
+        const now = new Date();
+        const defaultEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+        
+        carData = {
+          ...formData,
+          startPrice: parseFloat(formData.fixedPrice), // Use fixed price as starting price
+          fixedPrice: parseFloat(formData.fixedPrice),
+          year: Number(formData.year),
+          imageUrls: imageUrls,
+          primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined,
+          // Set default auction dates to satisfy database constraints
+          auctionStartDate: now.toISOString(),
+          auctionEndDate: defaultEndDate.toISOString()
+        };
+      } else {
+        // For auctions, use the provided values
+        carData = {
+          ...formData,
+          startPrice: parseFloat(formData.startPrice),
+          fixedPrice: undefined, // No fixed price for auctions
+          year: Number(formData.year),
+          imageUrls: imageUrls,
+          primaryImageIndex: primaryImageIndex !== null ? primaryImageIndex : undefined
+        };
+      }
 
       await addCar(carData);
       setSuccess(true);
-      showToast('Car Added', 'Your car has been submitted for auction and is pending approval.', 'success');
+      const successMessage = formData.saleType === 'DirectSale' 
+        ? 'Your car has been submitted for direct sale and is pending approval.'
+        : 'Your car has been submitted for auction and is pending approval.';
+      showToast('Car Added', successMessage, 'success');
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
@@ -173,11 +210,11 @@ const AddCar: React.FC = () => {
 
   return (
     <div>
-      <h2 className="mb-4">Add Car for Auction</h2>
+      <h2 className="mb-4">Add Car for Sale</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && (
         <Alert variant="success">
-          Car added successfully! Your car will be reviewed before being listed for auction.
+          Car added successfully! Your car will be reviewed before being listed.
         </Alert>
       )}
       
@@ -227,21 +264,74 @@ const AddCar: React.FC = () => {
             </Form.Group>
           </Col>
           
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formStartPrice">
-              <Form.Label>Starting Price ($)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                name="startPrice"
-                placeholder="0.00"
-                value={formData.startPrice}
+          {/* Starting Price - Only show for Auction type */}
+          {formData.saleType === 'Auction' && (
+            <Col md={6}>
+              <Form.Group className="mb-3" controlId="formStartPrice">
+                <Form.Label>Starting Price ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  name="startPrice"
+                  placeholder="0.00"
+                  value={formData.startPrice}
+                  onChange={handleChange}
+                  required
+                />
+              </Form.Group>
+            </Col>
+          )}
+        </Row>
+
+        {/* Sale Type Selection */}
+        <Row>
+          <Col md={12}>
+            <Form.Group className="mb-3" controlId="formSaleType">
+              <Form.Label>Sale Type</Form.Label>
+              <Form.Check
+                type="radio"
+                id="auction-type"
+                name="saleType"
+                value="Auction"
+                label="Auction - Let users bid on your car"
+                checked={formData.saleType === 'Auction'}
                 onChange={handleChange}
-                required
+              />
+              <Form.Check
+                type="radio"
+                id="direct-type"
+                name="saleType"
+                value="DirectSale"
+                label="Direct Sale - Sell at a fixed price"
+                checked={formData.saleType === 'DirectSale'}
+                onChange={handleChange}
               />
             </Form.Group>
           </Col>
         </Row>
+
+        {/* Fixed Price for Direct Sale */}
+        {formData.saleType === 'DirectSale' && (
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3" controlId="formFixedPrice">
+                <Form.Label>Fixed Price ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  name="fixedPrice"
+                  placeholder="0.00"
+                  value={formData.fixedPrice}
+                  onChange={handleChange}
+                  required
+                />
+                <Form.Text className="text-muted">
+                  This is the price buyers will pay to purchase your car immediately.
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+        )}
 
         <Form.Group className="mb-3">
           <Form.Label>Car Images</Form.Label>
@@ -371,39 +461,42 @@ const AddCar: React.FC = () => {
           />
         </Form.Group>
 
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formAuctionStart">
-              <Form.Label>Auction Start Date & Time</Form.Label>
-              <Form.Control
-                type="datetime-local"
-                name="auctionStartDate"
-                value={formData.auctionStartDate}
-                onChange={handleChange}
-                required
-              />
-              <Form.Text className="text-muted">
-                Auction will automatically change from "Upcoming" to "Ongoing" at this time (UTC).
-              </Form.Text>
-            </Form.Group>
-          </Col>
-          
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formAuctionEnd">
-              <Form.Label>Auction End Date & Time</Form.Label>
-              <Form.Control
-                type="datetime-local"
-                name="auctionEndDate"
-                value={formData.auctionEndDate}
-                onChange={handleChange}
-                required
-              />
-              <Form.Text className="text-muted">
-                Auction will automatically change from "Ongoing" to "Sold"/"Not Sold" at this time (UTC).
-              </Form.Text>
-            </Form.Group>
-          </Col>
-        </Row>
+        {/* Auction Dates - Only show for Auction type */}
+        {formData.saleType === 'Auction' && (
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3" controlId="formAuctionStart">
+                <Form.Label>Auction Start Date & Time</Form.Label>
+                <Form.Control
+                  type="datetime-local"
+                  name="auctionStartDate"
+                  value={formData.auctionStartDate}
+                  onChange={handleChange}
+                  required
+                />
+                <Form.Text className="text-muted">
+                  Auction will automatically change from "Upcoming" to "Ongoing" at this time (UTC).
+                </Form.Text>
+              </Form.Group>
+            </Col>
+            
+            <Col md={6}>
+              <Form.Group className="mb-3" controlId="formAuctionEnd">
+                <Form.Label>Auction End Date & Time</Form.Label>
+                <Form.Control
+                  type="datetime-local"
+                  name="auctionEndDate"
+                  value={formData.auctionEndDate}
+                  onChange={handleChange}
+                  required
+                />
+                <Form.Text className="text-muted">
+                  Auction will automatically change from "Ongoing" to "Sold"/"Not Sold" at this time (UTC).
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+        )}
 
         <Button variant="primary" type="submit" disabled={loading || success}>
           {loading ? 'Submitting...' : 'Add Car'}
