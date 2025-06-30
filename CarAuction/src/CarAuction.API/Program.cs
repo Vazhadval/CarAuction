@@ -42,9 +42,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
                           ?? builder.Configuration.GetConnectionString("DefaultConnection");
     
+    // For migrations: Force PostgreSQL if FORCE_POSTGRESQL environment variable is set
+    var forcePostgreSQL = Environment.GetEnvironmentVariable("FORCE_POSTGRESQL") == "true";
+    
     // Debug logging for connection string
     Console.WriteLine($"CONNECTION STRING DEBUG:");
     Console.WriteLine($"DATABASE_URL env var: {(Environment.GetEnvironmentVariable("DATABASE_URL") != null ? "EXISTS" : "NULL")}");
+    Console.WriteLine($"FORCE_POSTGRESQL: {forcePostgreSQL}");
     Console.WriteLine($"Connection string length: {connectionString?.Length ?? 0}");
     Console.WriteLine($"Starts with postgresql://: {connectionString?.StartsWith("postgresql://") == true}");
     
@@ -93,33 +97,40 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         }
     }
     
-    // Check if it's a PostgreSQL connection string (for production/Render)
-    if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
+    // Check if it's a PostgreSQL connection string (for production/Render) or forced for migrations
+    if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true || forcePostgreSQL)
     {
         Console.WriteLine("Using PostgreSQL (Npgsql)");
         
+        if (forcePostgreSQL && !connectionString?.Contains("postgresql://") == true)
+        {
+            // Use a dummy PostgreSQL connection string for migrations
+            connectionString = "Host=localhost;Port=5432;Database=temp_migration_db;Username=temp;Password=temp";
+            Console.WriteLine("Using temporary PostgreSQL connection string for migration generation");
+        }
+        
         // Convert URI format to Npgsql connection string format
-        try
+        if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
         {
-            var uri = new Uri(connectionString);
-            var userInfo = uri.UserInfo.Split(':');
-            var username = userInfo[0];
-            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-            
-            var npgsqlConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
-            
-            Console.WriteLine($"Converted to Npgsql format (masked): Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password=***;SSL Mode=Require;Trust Server Certificate=true");
-            
-            options.UseNpgsql(npgsqlConnectionString)
-                   .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+            try
+            {
+                var uri = new Uri(connectionString);
+                var userInfo = uri.UserInfo.Split(':');
+                var username = userInfo[0];
+                var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+                
+                connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+                
+                Console.WriteLine($"Converted to Npgsql format (masked): Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password=***;SSL Mode=Require;Trust Server Certificate=true");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error converting connection string: {ex.Message}");
+            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error converting connection string: {ex.Message}");
-            // Fallback to original connection string
-            options.UseNpgsql(connectionString)
-                   .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-        }
+        
+        options.UseNpgsql(connectionString)
+               .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
     }
     else
     {
