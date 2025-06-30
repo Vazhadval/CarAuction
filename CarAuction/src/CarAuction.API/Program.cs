@@ -48,6 +48,51 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     Console.WriteLine($"Connection string length: {connectionString?.Length ?? 0}");
     Console.WriteLine($"Starts with postgresql://: {connectionString?.StartsWith("postgresql://") == true}");
     
+    // Show the masked connection string for debugging
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        // Mask password but show the structure
+        var maskedConnectionString = connectionString;
+        if (connectionString.Contains("://") && connectionString.Contains("@"))
+        {
+            var parts = connectionString.Split('@');
+            if (parts.Length >= 2)
+            {
+                var beforeAt = parts[0];
+                var afterAt = string.Join("@", parts.Skip(1));
+                
+                if (beforeAt.Contains(":"))
+                {
+                    var userParts = beforeAt.Split(':');
+                    if (userParts.Length >= 3) // protocol:user:password
+                    {
+                        maskedConnectionString = $"{userParts[0]}:{userParts[1]}:***@{afterAt}";
+                    }
+                }
+            }
+        }
+        Console.WriteLine($"Masked connection string: {maskedConnectionString}");
+        
+        // Check for common issues
+        Console.WriteLine($"Contains spaces: {connectionString.Contains(" ")}");
+        Console.WriteLine($"Contains newlines: {connectionString.Contains("\n") || connectionString.Contains("\r")}");
+        Console.WriteLine($"First char: '{connectionString[0]}'");
+        Console.WriteLine($"Last char: '{connectionString[connectionString.Length - 1]}'");
+        
+        try
+        {
+            var uri = new Uri(connectionString);
+            Console.WriteLine($"Host: {uri.Host}");
+            Console.WriteLine($"Port: {uri.Port}");
+            Console.WriteLine($"Database: {uri.AbsolutePath.TrimStart('/')}");
+            Console.WriteLine($"Username: {uri.UserInfo.Split(':')[0]}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing connection string as URI: {ex.Message}");
+        }
+    }
+    
     // Check if it's a PostgreSQL connection string (for production/Render)
     if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
     {
@@ -145,61 +190,74 @@ using (var scope = app.Services.CreateScope())
 
         // Test database connection first
         logger.LogInformation("Testing database connection...");
-        if (await context.Database.CanConnectAsync())
+        try
         {
-            logger.LogInformation("Database connection successful. Running migrations...");
-            await context.Database.MigrateAsync();
-            logger.LogInformation("Database migrations completed successfully.");
-
-            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-
-            // Create roles if they don't exist
-            if (!await roleManager.RoleExistsAsync("Admin"))
+            // Try to create a connection to test the connection string format
+            using var testConnection = context.Database.GetDbConnection();
+            Console.WriteLine($"Connection type: {testConnection.GetType().Name}");
+            Console.WriteLine($"Connection string (length): {testConnection.ConnectionString?.Length ?? 0}");
+            
+            var canConnect = await context.Database.CanConnectAsync();
+            if (canConnect)
             {
-                await roleManager.CreateAsync(new IdentityRole("Admin"));
-                logger.LogInformation("Admin role created.");
-            }
+                logger.LogInformation("Database connection successful. Running migrations...");
+                await context.Database.MigrateAsync();
+                logger.LogInformation("Database migrations completed successfully.");
 
-            if (!await roleManager.RoleExistsAsync("User"))
-            {
-                await roleManager.CreateAsync(new IdentityRole("User"));
-                logger.LogInformation("User role created.");
-            }
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-            // Create admin user if it doesn't exist
-            var adminEmail = "admin@carauction.com";
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-            if (adminUser == null)
-            {
-                adminUser = new ApplicationUser
+                // Create roles if they don't exist
+                if (!await roleManager.RoleExistsAsync("Admin"))
                 {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    FirstName = "System",
-                    LastName = "Admin",
-                    EmailConfirmed = true,
-                    RegisteredDate = DateTime.UtcNow
-                };
-
-                var result = await userManager.CreateAsync(adminUser, "Admin123!");
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(adminUser, "Admin");
-                    logger.LogInformation("Admin user created successfully.");
+                    await roleManager.CreateAsync(new IdentityRole("Admin"));
+                    logger.LogInformation("Admin role created.");
                 }
-                else
-                {
-                    logger.LogError("Failed to create admin user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
-                }
-            }
 
-            logger.LogInformation("Application initialization completed successfully.");
+                if (!await roleManager.RoleExistsAsync("User"))
+                {
+                    await roleManager.CreateAsync(new IdentityRole("User"));
+                    logger.LogInformation("User role created.");
+                }
+
+                // Create admin user if it doesn't exist
+                var adminEmail = "admin@carauction.com";
+                var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+                if (adminUser == null)
+                {
+                    adminUser = new ApplicationUser
+                    {
+                        UserName = adminEmail,
+                        Email = adminEmail,
+                        FirstName = "System",
+                        LastName = "Admin",
+                        EmailConfirmed = true,
+                        RegisteredDate = DateTime.UtcNow
+                    };
+
+                    var result = await userManager.CreateAsync(adminUser, "Admin123!");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(adminUser, "Admin");
+                        logger.LogInformation("Admin user created successfully.");
+                    }
+                    else
+                    {
+                        logger.LogError("Failed to create admin user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                    }
+                }
+
+                logger.LogInformation("Application initialization completed successfully.");
+            }
+            else
+            {
+                logger.LogError("Cannot connect to database. CanConnectAsync returned false.");
+            }
         }
-        else
+        catch (Exception dbEx)
         {
-            logger.LogError("Cannot connect to database. Please check connection string.");
+            logger.LogError(dbEx, "Database connection failed with exception: {Message}", dbEx.Message);
         }
     }
     catch (Exception ex)
