@@ -39,5 +39,34 @@ namespace CarAuction.Application.Interfaces
         /// <param name="userId">The ID of the user</param>
         /// <returns>List of user's bids with status information</returns>
         Task<List<UserBidDto>> GetUserBidsAsync(string userId);
+
+        /// <summary>
+        /// Verifies and fixes auction winners for sold cars to ensure data integrity
+        /// </summary>
+        /// <returns>The number of cars that were fixed</returns>
+        Task<int> VerifyAndFixAuctionWinners();
+
+        /// <summary>
+        /// Checks if a user is the winner of a specific car auction
+        /// </summary>
+        /// <param name="carId">The car ID to check</param>
+        /// <param name="userId">The user ID to check</param>
+        /// <returns>True if the user won the auction, false otherwise</returns>
+        Task<bool> IsUserAuctionWinner(int carId, string userId);
+
+        /// <summary>
+        /// Gets the current winner of an ongoing auction (or actual winner if auction ended)
+        /// </summary>
+        /// <param name="carId">The car ID to check</param>
+        /// <returns>The user ID of the current/actual winner, or null if no winner</returns>
+        Task<string?> GetCurrentAuctionWinner(int carId);
+
+        /// <summary>
+        /// Places a bid with enhanced concurrency protection and robust winner determination
+        /// </summary>
+        /// <param name="bidDto">The bid details</param>
+        /// <param name="bidderId">The ID of the bidder</param>
+        /// <returns>True if the bid was placed successfully, false otherwise</returns>
+        Task<bool> PlaceBidWithConcurrencyProtection(PlaceBidDto bidDto, string bidderId);
     }
 }

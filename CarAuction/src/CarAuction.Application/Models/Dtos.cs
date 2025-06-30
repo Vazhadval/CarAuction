@@ -24,6 +24,7 @@ namespace CarAuction.Application.Models
         public string Status { get; set; } = string.Empty;
         public decimal CurrentBid { get; set; }
         public string SellerName { get; set; } = string.Empty;
+        public string? WinnerName { get; set; } // Name of the auction winner
     }
 
     public class CarDetailsDto : CarDto

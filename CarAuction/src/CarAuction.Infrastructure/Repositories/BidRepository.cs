@@ -61,13 +61,12 @@ namespace CarAuction.Infrastructure.Repositories
         public async Task<List<Car>> GetWonCarsByUserAsync(string userId)
         {
             return await _context.Cars
-                .Where(c => c.Status == CarStatus.Sold)
+                .Where(c => c.Status == CarStatus.Sold && c.WinnerUserId == userId)
                 .Include(c => c.Bids)
                 .ThenInclude(b => b.Bidder)
                 .Include(c => c.Images)
                 .Include(c => c.Seller)
-                .Where(c => c.Bids.Any() && 
-                           c.Bids.OrderByDescending(b => b.Amount).First().BidderId == userId)
+                .Include(c => c.Winner)
                 .ToListAsync();
         }
     }

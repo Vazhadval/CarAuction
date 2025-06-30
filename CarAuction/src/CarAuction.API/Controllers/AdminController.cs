@@ -85,5 +85,15 @@ namespace CarAuction.API.Controllers
             
             return Ok(stats);
         }
+
+        [HttpPost("verify-winners")]
+        public async Task<IActionResult> VerifyAuctionWinners()
+        {
+            var fixedCount = await _auctionService.VerifyAndFixAuctionWinners();
+            return Ok(new { 
+                message = $"Auction winner verification completed. Fixed {fixedCount} cars with inconsistent winner data.",
+                fixedCount = fixedCount 
+            });
+        }
     }
 }

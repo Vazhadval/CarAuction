@@ -16,11 +16,13 @@ namespace CarAuction.Domain.Entities
         public DateTime AuctionEndDate { get; set; }
         public CarStatus Status { get; set; }
 
-        // Foreign key
+        // Foreign keys
         public required string SellerId { get; set; }
+        public string? WinnerUserId { get; set; } // The user who won the auction
         
         // Navigation properties
         public required virtual ApplicationUser Seller { get; set; }
+        public virtual ApplicationUser? Winner { get; set; } // Navigation to the winner
         public virtual ICollection<Bid> Bids { get; set; } = new List<Bid>();
         public virtual ICollection<CarImage> Images { get; set; } = new List<CarImage>();
     }

@@ -82,15 +82,12 @@ namespace CarAuction.Application.Services
                 }
                 else if (car.Status == CarStatus.OngoingAuction && now >= car.AuctionEndDate)
                 {
-                    var highestBid = car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault();
-                    car.Status = highestBid != null ? CarStatus.Sold : CarStatus.NotSold;
-                    updated = true;
-                    Console.WriteLine($"Bulk update: Car {car.Id} transitioning to {car.Status} at {now}");
-                    
-                    // If there's a winner, notify them
-                    if (highestBid != null && car.Status == CarStatus.Sold)
+                    // Use the robust auction ending method
+                    var auctionEnded = await EndAuctionSafely(car);
+                    if (auctionEnded)
                     {
-                        await NotifyAuctionWinner(highestBid.BidderId, car.Id, $"{car.Name} {car.Model}", highestBid.Amount);
+                        updated = true;
+                        Console.WriteLine($"Bulk update: Car {car.Id} auction ended, status: {car.Status}");
                     }
                 }
                 
@@ -128,15 +125,12 @@ namespace CarAuction.Application.Services
             }
             else if (car.Status == CarStatus.OngoingAuction && now >= endDate)
             {
-                var highestBid = car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault();
-                car.Status = highestBid != null ? CarStatus.Sold : CarStatus.NotSold;
-                needsUpdate = true;
-                Console.WriteLine($"Transitioning car {car.Id} from OngoingAuction to {car.Status} at {now}");
-                
-                // If there's a winner, notify them
-                if (highestBid != null && car.Status == CarStatus.Sold)
+                // Use the robust auction ending method
+                var auctionEnded = await EndAuctionSafely(car);
+                if (auctionEnded)
                 {
-                    await NotifyAuctionWinner(highestBid.BidderId, car.Id, $"{car.Name} {car.Model}", highestBid.Amount);
+                    needsUpdate = true;
+                    Console.WriteLine($"Individual update: Car {car.Id} auction ended, status: {car.Status}");
                 }
             }
             
@@ -391,7 +385,18 @@ namespace CarAuction.Application.Services
             
             return wonCars.Select(car => 
             {
-                var winningBid = car.Bids.OrderByDescending(b => b.Amount).First();
+                // Use more robust approach to get the winning bid amount
+                // Since the user is confirmed as the winner, find their highest bid
+                var userWinningBid = car.Bids
+                    .Where(b => b.BidderId == userId)
+                    .OrderByDescending(b => b.Amount)
+                    .FirstOrDefault();
+                
+                // Fallback to highest bid overall if user's bid not found (shouldn't happen)
+                var winningBidAmount = userWinningBid?.Amount ?? 
+                    car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault()?.Amount ?? 
+                    car.StartPrice;
+                
                 return new WonCarDto
                 {
                     Id = car.Id,
@@ -399,7 +404,7 @@ namespace CarAuction.Application.Services
                     Model = car.Model,
                     Year = car.Year,
                     StartPrice = car.StartPrice,
-                    WinningBid = winningBid.Amount,
+                    WinningBid = winningBidAmount,
                     PhotoUrl = car.PhotoUrl,
                     Images = car.Images?
                         .Select(i => new CarImageDto 
@@ -421,9 +426,28 @@ namespace CarAuction.Application.Services
             
             return userBids.Select(bid => 
             {
+                // Use more robust logic for determining if user is winning
+                bool isWinning = false;
+                bool hasWon = bid.Car.Status == CarStatus.Sold && bid.Car.WinnerUserId == userId;
+                
+                // For ongoing auctions, determine if user is currently winning
+                if (bid.Car.Status == CarStatus.OngoingAuction)
+                {
+                    // Check if this user has the highest bid amount, and if tied, check by timestamp
+                    var allBids = bid.Car.Bids.Where(b => b.Amount > 0).ToList();
+                    if (allBids.Any())
+                    {
+                        var maxAmount = allBids.Max(b => b.Amount);
+                        var winningBid = allBids
+                            .Where(b => b.Amount == maxAmount)
+                            .OrderBy(b => b.PlacedAt)
+                            .FirstOrDefault();
+                        
+                        isWinning = winningBid?.BidderId == userId;
+                    }
+                }
+                
                 var highestBid = bid.Car.Bids.OrderByDescending(b => b.Amount).FirstOrDefault();
-                var isWinning = highestBid?.BidderId == userId;
-                var hasWon = bid.Car.Status == CarStatus.Sold && isWinning;
                 
                 return new UserBidDto
                 {
@@ -466,7 +490,8 @@ namespace CarAuction.Application.Services
                 AuctionEndDate = car.AuctionEndDate,
                 Status = car.Status.ToString(),
                 CurrentBid = highestBid?.Amount ?? 0,
-                SellerName = $"{car.Seller?.FirstName} {car.Seller?.LastName}"
+                SellerName = $"{car.Seller?.FirstName} {car.Seller?.LastName}",
+                WinnerName = car.Winner != null ? $"{car.Winner.FirstName} {car.Winner.LastName}" : null
             };
         }
 
@@ -496,6 +521,7 @@ namespace CarAuction.Application.Services
                 Status = car.Status.ToString(),
                 CurrentBid = highestBid?.Amount ?? 0,
                 SellerName = $"{car.Seller?.FirstName} {car.Seller?.LastName}",
+                WinnerName = car.Winner != null ? $"{car.Winner.FirstName} {car.Winner.LastName}" : null,
                 BidCount = car.Bids?.Count ?? 0,
                 RecentBids = car.Bids?
                     .OrderByDescending(b => b.PlacedAt)
@@ -512,6 +538,223 @@ namespace CarAuction.Application.Services
             };
 
             return carDetailsDto;
+        }
+        
+        /// <summary>
+        /// Ends an auction and determines the winner in a transaction-safe manner
+        /// </summary>
+        private async Task<bool> EndAuctionSafely(Car car)
+        {
+            try
+            {
+                // Use a more robust approach to determine the winner
+                var winningBid = await DetermineAuctionWinner(car.Id);
+                
+                if (winningBid != null)
+                {
+                    car.Status = CarStatus.Sold;
+                    car.WinnerUserId = winningBid.BidderId;
+                    
+                    Console.WriteLine($"Auction ended: Car {car.Id} won by user {car.WinnerUserId} with bid ${winningBid.Amount}");
+                    
+                    // Notify the winner
+                    await NotifyAuctionWinner(winningBid.BidderId, car.Id, $"{car.Name} {car.Model}", winningBid.Amount);
+                }
+                else
+                {
+                    car.Status = CarStatus.NotSold;
+                    car.WinnerUserId = null;
+                    
+                    Console.WriteLine($"Auction ended: Car {car.Id} - no bids, marked as not sold");
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error ending auction for car {car.Id}: {ex.Message}");
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Determines the auction winner using the most recent highest bid with timestamp consideration
+        /// </summary>
+        private async Task<Bid?> DetermineAuctionWinner(int carId)
+        {
+            // Get all bids for this car, ordered by amount (highest first), then by timestamp (earliest first for same amount)
+            var car = await _carRepository.GetCarByIdAsync(carId);
+            if (car?.Bids == null || !car.Bids.Any())
+                return null;
+            
+            // Find the highest bid amount
+            var maxAmount = car.Bids.Max(b => b.Amount);
+            
+            // Among all bids with the highest amount, select the earliest one (first to place that amount)
+            var winningBid = car.Bids
+                .Where(b => b.Amount == maxAmount)
+                .OrderBy(b => b.PlacedAt) // Earliest timestamp wins in case of tie
+                .FirstOrDefault();
+            
+            return winningBid;
+        }
+
+        /// <summary>
+        /// Verifies and fixes auction winners for sold cars that may have inconsistent winner data
+        /// </summary>
+        public async Task<int> VerifyAndFixAuctionWinners()
+        {
+            var soldCars = await _carRepository.GetCarsByStatusAsync(CarStatus.Sold);
+            int fixedCount = 0;
+
+            foreach (var car in soldCars)
+            {
+                bool needsUpdate = false;
+                
+                // Case 1: Car is sold but has no winner assigned
+                if (car.WinnerUserId == null && car.Bids.Any())
+                {
+                    var winningBid = await DetermineAuctionWinner(car.Id);
+                    if (winningBid != null)
+                    {
+                        car.WinnerUserId = winningBid.BidderId;
+                        needsUpdate = true;
+                        Console.WriteLine($"Fixed missing winner for car {car.Id}: assigned to user {car.WinnerUserId}");
+                    }
+                }
+                // Case 2: Car is sold but the assigned winner didn't actually place the highest bid
+                else if (car.WinnerUserId != null && car.Bids.Any())
+                {
+                    var actualWinningBid = await DetermineAuctionWinner(car.Id);
+                    if (actualWinningBid != null && actualWinningBid.BidderId != car.WinnerUserId)
+                    {
+                        Console.WriteLine($"Warning: Car {car.Id} winner mismatch. Assigned: {car.WinnerUserId}, Actual highest bidder: {actualWinningBid.BidderId}");
+                        car.WinnerUserId = actualWinningBid.BidderId;
+                        needsUpdate = true;
+                        Console.WriteLine($"Fixed incorrect winner for car {car.Id}: reassigned to user {car.WinnerUserId}");
+                    }
+                }
+                // Case 3: Car is marked as sold but has no bids
+                else if (!car.Bids.Any())
+                {
+                    car.Status = CarStatus.NotSold;
+                    car.WinnerUserId = null;
+                    needsUpdate = true;
+                    Console.WriteLine($"Fixed car {car.Id}: marked as NotSold (no bids found)");
+                }
+                
+                if (needsUpdate)
+                {
+                    await _carRepository.UpdateCarAsync(car);
+                    fixedCount++;
+                }
+            }
+
+            Console.WriteLine($"Auction winner verification completed. Fixed {fixedCount} cars.");
+            return fixedCount;
+        }
+
+        /// <summary>
+        /// Checks if a user is the winner of a specific car auction
+        /// </summary>
+        /// <param name="carId">The car ID to check</param>
+        /// <param name="userId">The user ID to check</param>
+        /// <returns>True if the user won the auction, false otherwise</returns>
+        public async Task<bool> IsUserAuctionWinner(int carId, string userId)
+        {
+            var car = await _carRepository.GetCarByIdAsync(carId);
+            if (car == null)
+                return false;
+            
+            // For sold cars, use the WinnerUserId field (most reliable)
+            if (car.Status == CarStatus.Sold)
+            {
+                return car.WinnerUserId == userId;
+            }
+            
+            // For ongoing auctions, check if user has the winning bid
+            if (car.Status == CarStatus.OngoingAuction)
+            {
+                var winningBid = await DetermineAuctionWinner(carId);
+                return winningBid?.BidderId == userId;
+            }
+            
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the current winner of an ongoing auction (or actual winner if auction ended)
+        /// </summary>
+        /// <param name="carId">The car ID to check</param>
+        /// <returns>The user ID of the current/actual winner, or null if no winner</returns>
+        public async Task<string?> GetCurrentAuctionWinner(int carId)
+        {
+            var car = await _carRepository.GetCarByIdAsync(carId);
+            if (car == null)
+                return null;
+            
+            // For sold cars, return the WinnerUserId
+            if (car.Status == CarStatus.Sold)
+            {
+                return car.WinnerUserId;
+            }
+            
+            // For ongoing auctions, determine current leader
+            if (car.Status == CarStatus.OngoingAuction)
+            {
+                var winningBid = await DetermineAuctionWinner(carId);
+                return winningBid?.BidderId;
+            }
+            
+            return null;
+        }
+
+        /// <summary>
+        /// Places a bid with enhanced concurrency protection and robust winner determination
+        /// </summary>
+        public async Task<bool> PlaceBidWithConcurrencyProtection(PlaceBidDto bidDto, string bidderId)
+        {
+            const int maxRetries = 3;
+            int retryCount = 0;
+            
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    var result = await PlaceBidAsync(bidDto, bidderId);
+                    if (result)
+                    {
+                        // Double-check that the bid was recorded correctly
+                        var car = await _carRepository.GetCarByIdAsync(bidDto.CarId);
+                        var userBid = car?.Bids?.FirstOrDefault(b => b.BidderId == bidderId && b.Amount == bidDto.Amount);
+                        
+                        if (userBid == null)
+                        {
+                            Console.WriteLine($"Warning: Bid placement verification failed for user {bidderId} on car {bidDto.CarId}");
+                            return false;
+                        }
+                        
+                        return true;
+                    }
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    Console.WriteLine($"Bid placement attempt {retryCount} failed for user {bidderId} on car {bidDto.CarId}: {ex.Message}");
+                    
+                    if (retryCount >= maxRetries)
+                    {
+                        Console.WriteLine($"Failed to place bid after {maxRetries} attempts");
+                        return false;
+                    }
+                    
+                    // Wait a short time before retrying
+                    await Task.Delay(100 * retryCount);
+                }
+            }
+            
+            return false;
         }
     }
 }

@@ -95,5 +95,30 @@ namespace CarAuction.API.Controllers
             var userBids = await _auctionService.GetUserBidsAsync(userId);
             return Ok(userBids);
         }
+
+        [Authorize]
+        [HttpGet("{id}/winner")]
+        public async Task<IActionResult> GetAuctionWinner(int id)
+        {
+            var winnerId = await _auctionService.GetCurrentAuctionWinner(id);
+            if (winnerId == null)
+            {
+                return Ok(new { hasWinner = false, winnerId = (string?)null });
+            }
+            
+            return Ok(new { hasWinner = true, winnerId = winnerId });
+        }
+
+        [Authorize]
+        [HttpGet("{id}/is-winner")]
+        public async Task<IActionResult> CheckIfUserIsWinner(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+            
+            var isWinner = await _auctionService.IsUserAuctionWinner(id, userId);
+            return Ok(new { isWinner = isWinner });
+        }
     }
 }

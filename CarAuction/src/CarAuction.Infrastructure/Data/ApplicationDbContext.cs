@@ -33,6 +33,13 @@ namespace CarAuction.Infrastructure.Data
                       .WithMany(u => u.CarsForAuction)
                       .HasForeignKey(c => c.SellerId)
                       .OnDelete(DeleteBehavior.Restrict);
+                
+                // Relationship with User (Winner) - optional
+                entity.HasOne(c => c.Winner)
+                      .WithMany(u => u.WonCars)
+                      .HasForeignKey(c => c.WinnerUserId)
+                      .OnDelete(DeleteBehavior.Restrict)
+                      .IsRequired(false);
             });
             
             // Configure CarImage entity
