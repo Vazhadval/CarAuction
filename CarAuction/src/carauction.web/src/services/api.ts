@@ -15,7 +15,11 @@ import {
 } from '../types';
 import { API_CONFIG } from '../config/apiConfig';
 
+console.log('🔍 API_CONFIG imported:', API_CONFIG);
+
 const API_URL = `${API_CONFIG.BASE_URL}/api`;
+
+console.log('🔍 Final API_URL:', API_URL);
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -54,6 +58,8 @@ export const getAllCars = () => {
   console.log('🚀 getAllCars called with API_URL:', API_URL);
   return apiClient.get<Car[]>('/cars');
 };
+
+console.log('🔍 getAllCars function defined:', typeof getAllCars);
 
 export const getCarsByStatus = (status: string) => {
   return apiClient.get<Car[]>(`/cars/status/${status}`);
@@ -131,3 +137,9 @@ export const getAdminOrders = () => {
 };
 
 export default apiClient;
+
+// Debug: Log all exports
+console.log('🔍 API Module Exports Check:');
+console.log('getAllCars exported:', typeof getAllCars);
+console.log('login exported:', typeof login);
+console.log('register exported:', typeof register);

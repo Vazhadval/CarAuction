@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Badge, Button, Nav, Tab } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import * as api from '../services/api';
+import { getAllCars } from '../services/api';
 import { Car } from '../types';
 import { getAbsoluteImageUrl } from '../utils/imageHelper';
 import { formatDate, getTimeRemaining, isAuctionActive } from '../utils/dateHelpers';
 import signalRService from '../services/signalRService';
 
 // Debug: Check if getAllCars is imported correctly
-console.log('🔍 API import:', api, 'getAllCars:', typeof api.getAllCars);
+console.log('🔍 getAllCars import:', typeof getAllCars, getAllCars);
 
 const Home: React.FC = () => {
   const [cars, setCars] = useState<Car[]>([]);
@@ -23,7 +23,7 @@ const Home: React.FC = () => {
   const fetchCars = async () => {
     setLoading(true);
     try {
-      const response = await api.getAllCars();
+      const response = await getAllCars();
       setCars(response.data);
     } catch (err) {
       setError('მანქანების ჩამოტვირთვა ვერ მოხერხდა. გთხოვთ, კვლავ სცადეთ.');
