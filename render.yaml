@@ -8,9 +8,11 @@ services:
         value: Production
       - key: ASPNETCORE_URLS
         value: http://+:80
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carauction-db
+          property: connectionString
     healthCheckPath: /api/cars
   
   - type: pserv
     name: carauction-db
-    databaseName: carauction
-    user: carauction_user
