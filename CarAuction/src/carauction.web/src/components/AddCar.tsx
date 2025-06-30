@@ -94,12 +94,12 @@ const AddCar: React.FC = () => {
       }
       
       // Show success toast
-      showToast('Images Uploaded', `Successfully uploaded ${successfulUploads.length} images.`, 'success');
+      showToast('სურათები ატვირთულია', `წარმატებით ატვირთულია ${successfulUploads.length} სურათი.`, 'success');
     } catch (err: any) {
       console.error('Error uploading images:', err);
-      const errorMessage = err.message || 'Failed to upload images. Please try again.';
+      const errorMessage = err.message || 'სურათების ატვირთვა ვერ მოხერხდა. გთხოვთ, კვლავ სცადეთ.';
       setUploadError(errorMessage);
-      showToast('Upload Error', errorMessage, 'error');
+      showToast('ატვირთვის შეცდომა', errorMessage, 'error');
     } finally {
       setIsUploading(false);
       setUploadProgress(100);
@@ -123,20 +123,20 @@ const AddCar: React.FC = () => {
       console.log(`End time: ${endDate.toISOString()}`);
 
       if (startDate < now) {
-        setError('Auction start date must be in the future');
+        setError('აუქციონის დაწყების თარიღი უნდა იყოს მომავალში');
         setLoading(false);
         return;
       }
 
       if (endDate <= startDate) {
-        setError('Auction end date must be after the start date');
+        setError('აუქციონის დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ');
         setLoading(false);
         return;
       }
     } else if (formData.saleType === 'DirectSale') {
       // Validate fixed price
       if (!formData.fixedPrice || parseFloat(formData.fixedPrice) <= 0) {
-        setError('Please enter a valid fixed price for direct sale');
+        setError('გთხოვთ, შეიყვანოთ ვალიდური ფიქსირებული ფასი პირდაპირი გაყიდვისთვის');
         setLoading(false);
         return;
       }
@@ -144,14 +144,14 @@ const AddCar: React.FC = () => {
 
     // Check if we have at least one image
     if (uploadedImages.length === 0) {
-      setError('Please upload at least one image of your car');
+      setError('გთხოვთ, ავირჩიოთ მინიმუმ ერთი სურათი თქვენი მანქანისა');
       setLoading(false);
       return;
     }
 
     // Validate that all files are uploaded
     if (selectedFiles.length > 0 && !isUploading) {
-      setError('Please upload your selected images before submitting');
+      setError('გთხოვთ, ავირჩიოთ არჩეული სურათები გაგზავნამდე');
       setLoading(false);
       return;
     }
@@ -193,16 +193,16 @@ const AddCar: React.FC = () => {
       await addCar(carData);
       setSuccess(true);
       const successMessage = formData.saleType === 'DirectSale' 
-        ? 'Your car has been submitted for direct sale and is pending approval.'
-        : 'Your car has been submitted for auction and is pending approval.';
+        ? 'თქვენი მანქანა წარდგენილია პირდაპირი გაყიდვისთვის და დამტკიცების მოლოდინშია.'
+        : 'თქვენი მანქანა წარდგენილია აუქციონისთვის და დამტკიცების მოლოდინშია.';
       showToast('Car Added', successMessage, 'success');
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to add car. Please try again later.';
+      const errorMessage = err.response?.data?.message || 'მანქანის დამატება ვერ მოხერხდა. გთხოვთ, მოგვიანებით სცადეთ.';
       setError(errorMessage);
-      showToast('Error', errorMessage, 'error');
+      showToast('შეცდომა', errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -210,11 +210,11 @@ const AddCar: React.FC = () => {
 
   return (
     <div>
-      <h2 className="mb-4">Add Car for Sale</h2>
+      <h2 className="mb-4">მანქანის გაყიდვისთვის დამატება</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {success && (
         <Alert variant="success">
-          Car added successfully! Your car will be reviewed before being listed.
+          მანქანა წარმატებით დაემატა! თქვენი მანქანა განხილული იქნება განთავსებამდე.
         </Alert>
       )}
       
@@ -222,11 +222,11 @@ const AddCar: React.FC = () => {
         <Row>
           <Col md={6}>
             <Form.Group className="mb-3" controlId="formName">
-              <Form.Label>Car Name</Form.Label>
+              <Form.Label>მანქანის სახელი</Form.Label>
               <Form.Control
                 type="text"
                 name="name"
-                placeholder="e.g., Toyota Camry"
+                placeholder="მაგ., Toyota Camry"
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -236,11 +236,11 @@ const AddCar: React.FC = () => {
           
           <Col md={6}>
             <Form.Group className="mb-3" controlId="formModel">
-              <Form.Label>Model</Form.Label>
+              <Form.Label>მოდელი</Form.Label>
               <Form.Control
                 type="text"
                 name="model"
-                placeholder="e.g., SE"
+                placeholder="მაგ., SE"
                 value={formData.model}
                 onChange={handleChange}
                 required
@@ -252,11 +252,11 @@ const AddCar: React.FC = () => {
         <Row>
           <Col md={6}>
             <Form.Group className="mb-3" controlId="formYear">
-              <Form.Label>Year</Form.Label>
+              <Form.Label>წელი</Form.Label>
               <Form.Control
                 type="number"
                 name="year"
-                placeholder="Year"
+                placeholder="წელი"
                 value={formData.year}
                 onChange={handleChange}
                 required
@@ -268,7 +268,7 @@ const AddCar: React.FC = () => {
           {formData.saleType === 'Auction' && (
             <Col md={6}>
               <Form.Group className="mb-3" controlId="formStartPrice">
-                <Form.Label>Starting Price ($)</Form.Label>
+                <Form.Label>საწყისი ფასი ($)</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
@@ -287,13 +287,13 @@ const AddCar: React.FC = () => {
         <Row>
           <Col md={12}>
             <Form.Group className="mb-3" controlId="formSaleType">
-              <Form.Label>Sale Type</Form.Label>
+              <Form.Label>გაყიდვის ტიპი</Form.Label>
               <Form.Check
                 type="radio"
                 id="auction-type"
                 name="saleType"
                 value="Auction"
-                label="Auction - Let users bid on your car"
+                label="აუქციონი - მისცეთ მომხმარებლებს შანსი ბიდი განათავსონ თქვენს მანქანაზე"
                 checked={formData.saleType === 'Auction'}
                 onChange={handleChange}
               />
@@ -302,7 +302,7 @@ const AddCar: React.FC = () => {
                 id="direct-type"
                 name="saleType"
                 value="DirectSale"
-                label="Direct Sale - Sell at a fixed price"
+                label="პირდაპირი გაყიდვა - გაყიდეთ ფიქსირებულ ფასად"
                 checked={formData.saleType === 'DirectSale'}
                 onChange={handleChange}
               />
@@ -315,7 +315,7 @@ const AddCar: React.FC = () => {
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3" controlId="formFixedPrice">
-                <Form.Label>Fixed Price ($)</Form.Label>
+                <Form.Label>ფიქსირებული ფასი ($)</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
@@ -334,7 +334,7 @@ const AddCar: React.FC = () => {
         )}
 
         <Form.Group className="mb-3">
-          <Form.Label>Car Images</Form.Label>
+          <Form.Label>მანქანის სურათები</Form.Label>
           <div className="mb-3">
             <input
               type="file"
@@ -351,7 +351,7 @@ const AddCar: React.FC = () => {
 
           {selectedFiles.length > 0 && (
             <div className="mb-3">
-              <h6>Selected Files:</h6>
+              <h6>არჩეული ფაილები:</h6>
               <Row xs={2} md={3} lg={4} className="g-3">
                 {selectedFiles.map((file, index) => (
                   <Col key={`${file.name}-${index}`}>
@@ -377,7 +377,7 @@ const AddCar: React.FC = () => {
                 onClick={handleUpload} 
                 disabled={isUploading || selectedFiles.length === 0}
               >
-                {isUploading ? 'Uploading...' : 'Upload Selected Images'}
+                {isUploading ? 'იტვირთება...' : 'არჩეული სურათების ატვირთვა'}
               </Button>
 
               {isUploading && (
@@ -449,12 +449,12 @@ const AddCar: React.FC = () => {
         </Form.Group>
 
         <Form.Group className="mb-3" controlId="formDescription">
-          <Form.Label>Description</Form.Label>
+          <Form.Label>აღწერა</Form.Label>
           <Form.Control
             as="textarea"
             rows={4}
             name="description"
-            placeholder="Describe your car - include condition, mileage, features, etc."
+            placeholder="აღწერეთ თქვენი მანქანა - მიუთითეთ მდგომარეობა, გარბენი, თვისებები და ა.შ."
             value={formData.description}
             onChange={handleChange}
             required
@@ -466,7 +466,7 @@ const AddCar: React.FC = () => {
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3" controlId="formAuctionStart">
-                <Form.Label>Auction Start Date & Time</Form.Label>
+                <Form.Label>აუქციონის დაწყების თარიღი და დრო</Form.Label>
                 <Form.Control
                   type="datetime-local"
                   name="auctionStartDate"
@@ -482,7 +482,7 @@ const AddCar: React.FC = () => {
             
             <Col md={6}>
               <Form.Group className="mb-3" controlId="formAuctionEnd">
-                <Form.Label>Auction End Date & Time</Form.Label>
+                <Form.Label>აუქციონის დასრულების თარიღი და დრო</Form.Label>
                 <Form.Control
                   type="datetime-local"
                   name="auctionEndDate"
@@ -491,7 +491,7 @@ const AddCar: React.FC = () => {
                   required
                 />
                 <Form.Text className="text-muted">
-                  Auction will automatically change from "Ongoing" to "Sold"/"Not Sold" at this time (UTC).
+                  აუქციონი ავტომატურად შეიცვლება "მიმდინარე"-დან "გაყიდული"/"არ არის გაყიდული"-ად ამ დროს (UTC).
                 </Form.Text>
               </Form.Group>
             </Col>
@@ -499,7 +499,7 @@ const AddCar: React.FC = () => {
         )}
 
         <Button variant="primary" type="submit" disabled={loading || success}>
-          {loading ? 'Submitting...' : 'Add Car'}
+          {loading ? 'იგზავნება...' : 'მანქანის დამატება'}
         </Button>
       </Form>
     </div>

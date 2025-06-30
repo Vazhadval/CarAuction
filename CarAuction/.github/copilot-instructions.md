@@ -7,6 +7,7 @@
 - do not automatically commit changes.
 - ask questions if you are unsure about any implementation details.
 - Always use powershell syntax for commands.
+- Always put Georgian texts in the UI. 
 
 ## Project Overview
 This is a car auction web application built with .NET (backend) and React/TypeScript (frontend). It allows users to register, add cars for auction, and participate in real-time bidding. It also includes an admin panel for managing cars and users.

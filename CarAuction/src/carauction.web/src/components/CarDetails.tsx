@@ -206,7 +206,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
       // Place direct sale order
       await buyDirectSaleCar(orderData);
       setShowOrderModal(false);
-      showToast('Purchase Successful', 'Your order has been placed successfully!', 'success');
+      showToast('შეძენა წარმატებულია', 'თქვენი შეკვეთა წარმატებით განთავსდა!', 'success');
       
       // Refresh car details to show it's been purchased
       const response = await getCarDetails(Number(id));
@@ -214,7 +214,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to place order. Please try again.';
       setOrderError(errorMessage);
-      showToast('Order Failed', errorMessage, 'error');
+      showToast('შეკვეთა ვერ მოხერხდა', errorMessage, 'error');
     } finally {
       setOrderLoading(false);
     }
@@ -264,7 +264,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
           getCarDetails(Number(id)).then(response => {
             setCar(response.data);
             if (response.data.status === 'OngoingAuction') {
-              showToast('Auction Started', 'This auction is now active!', 'info');
+              showToast('აუქციონი დაიწყო', 'ეს აუქციონი ახლა აქტიურია!', 'info');
             }
           }).catch(err => {
             console.error('Error updating car after auction start time reached:', err);
@@ -305,7 +305,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         try {
           const response = await getCarDetails(Number(id));
           setCar(response.data);
-          showToast('Auction Update', 'The auction is now active!', 'info');
+          showToast('აუქციონის განახლება', 'აუქციონი ახლა აქტიურია!', 'info');
         } catch (err) {
           console.error('Error refreshing car details:', err);
         }
@@ -320,7 +320,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         try {
           const response = await getCarDetails(Number(id));
           setCar(response.data);
-          showToast('Auction Update', 'The auction has ended!', 'info');
+          showToast('აუქციონის განახლება', 'აუქციონი დასრულდა!', 'info');
         } catch (err) {
           console.error('Error refreshing car details:', err);
         }
@@ -477,11 +477,11 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                       <strong>${bid.amount.toFixed(2)}</strong> by {bid.bidderName}
                       {isWinningBid && (
                         <Badge bg="success" className="ms-2">
-                          <i className="bi bi-trophy"></i> You're Winning!
+                          <i className="bi bi-trophy"></i> თქვენ ხართ გამარჯვებული!
                         </Badge>
                       )}
                       {isCurrentUserBid && !isWinningBid && (
-                        <Badge bg="primary" className="ms-2">Your Bid</Badge>
+                        <Badge bg="primary" className="ms-2">თქვენი ბიდი</Badge>
                       )}
                     </div>
                     <small>{new Date(bid.placedAt).toLocaleString()}</small>
@@ -489,7 +489,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                 );
               })
             ) : (
-              <ListGroup.Item>No bids yet</ListGroup.Item>
+              <ListGroup.Item>ჯერ ბიდები არ არის</ListGroup.Item>
             )}
           </ListGroup>
         </Card>
@@ -500,25 +500,25 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
         {/* Bidding/Buying Panel */}
         <Card>
           <Card.Header>
-            {car.saleType === 'DirectSale' ? 'Buy This Car' : 'Place a Bid'}
+            {car.saleType === 'DirectSale' ? 'ამ მანქანის შეძენა' : 'ბიდის განთავსება'}
           </Card.Header>
           <Card.Body>
             {!user ? (
               <Alert variant="info">
-                {car.saleType === 'DirectSale' ? 'Please log in to buy this car' : 'Please log in to place a bid'}
+                {car.saleType === 'DirectSale' ? 'მანქანის შესაძენად გთხოვთ, შეხვიდეთ სისტემაში' : 'ბიდის განსათავსებლად გთხოვთ, შეხვიდეთ სისტემაში'}
               </Alert>
             ) : isUserSeller ? (
-              <Alert variant="warning">You cannot buy/bid on your own car</Alert>
+              <Alert variant="warning">თქვენ არ შეგიძლიათ საკუთარი მანქანის შეძენა/ბიდის განთავსება</Alert>
             ) : car.saleType === 'DirectSale' ? (
               // Direct Sale Section
               <>
                 {car.status === 'Sold' || car.buyerName ? (
-                  <Alert variant="info">This car has already been sold to {car.buyerName}</Alert>
+                  <Alert variant="info">ეს მანქანა უკვე გაყიდულია {car.buyerName}-ისთვის</Alert>
                 ) : (
                   <>
                     <div className="mb-3">
                       <h5 className="text-primary">${car.fixedPrice?.toFixed(2)}</h5>
-                      <p className="text-muted">Fixed Price</p>
+                      <p className="text-muted">ფიქსირებული ფასი</p>
                     </div>
                     <Button 
                       variant="success" 
@@ -526,13 +526,13 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                       className="w-100"
                       onClick={handleShowOrderModal}
                     >
-                      Buy Now
+                      ახლავე შეძენა
                     </Button>
                   </>
                 )}
               </>
             ) : !isAuctionOngoing ? (
-              <Alert variant="info">This auction is not currently active</Alert>
+              <Alert variant="info">ეს აუქციონი ამჟამად არ არის აქტიური</Alert>
             ) : (
               // Auction Section
               <>
@@ -546,9 +546,9 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                       return (
                         <Alert variant="success" className="mb-3">
                           <i className="bi bi-trophy me-2"></i>
-                          <strong>You're currently winning!</strong>
+                          <strong>თქვენ ამჟამად იმარჯვებთ!</strong>
                           <br />
-                          <small>Your bid: ${highestBid.amount.toFixed(2)}</small>
+                          <small>თქვენი ბიდი: ${highestBid.amount.toFixed(2)}</small>
                         </Alert>
                       );
                     }
@@ -558,9 +558,9 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                 
                 <Form onSubmit={handleBidSubmit}>
                   {bidError && <Alert variant="danger">{bidError}</Alert>}
-                  {bidSuccess && <Alert variant="success">Bid placed successfully!</Alert>}
+                  {bidSuccess && <Alert variant="success">ბიდი წარმატებით განთავსდა!</Alert>}
                 <Form.Group className="mb-3" controlId="bidAmount">
-                  <Form.Label>Your Bid Amount ($)</Form.Label>
+                  <Form.Label>თქვენი ბიდის რაოდენობა ($)</Form.Label>
                   <Form.Control
                     type="number"
                     step="0.01"
@@ -570,11 +570,11 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                     required
                   />
                   <Form.Text className="text-muted">
-                    Must be higher than current bid: ${car.currentBid > 0 ? car.currentBid.toFixed(2) : car.startPrice.toFixed(2)}
+                    უნდა იყოს მიმდინარე ბიდზე მეტი: ${car.currentBid > 0 ? car.currentBid.toFixed(2) : car.startPrice.toFixed(2)}
                   </Form.Text>
                 </Form.Group>
                 <Button variant="primary" type="submit">
-                  Place Bid
+                  ბიდის განთავსება
                 </Button>
                 </Form>
               </>
@@ -584,16 +584,16 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
 
         {/* Auction Info */}
         <Card className="mt-4">
-          <Card.Header>Auction Information</Card.Header>
+          <Card.Header>აუქციონის ინფორმაცია</Card.Header>
           <Card.Body>
             <div className="mb-2">
-              <strong>Status:</strong> {formatStatus(car.status)}
+              <strong>სტატუსი:</strong> {formatStatus(car.status)}
             </div>
             <div className="mb-2">
-              <strong>Start Time:</strong> {formatDate(car.auctionStartDate)}
+              <strong>დაწყების დრო:</strong> {formatDate(car.auctionStartDate)}
             </div>
             <div className="mb-2">
-              <strong>End Time:</strong> {formatDate(car.auctionEndDate)}
+              <strong>დასრულების დრო:</strong> {formatDate(car.auctionEndDate)}
             </div>
             
             {/* Show winning status if user has the highest bid */}
@@ -606,18 +606,18 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                   return (
                     <Alert variant="success" className="mb-3">
                       <i className="bi bi-trophy me-2"></i>
-                      <strong>You're currently winning this auction!</strong>
+                      <strong>თქვენ ამჟამად იმარჯვებთ ამ აუქციონში!</strong>
                       <br />
-                      <small>Your winning bid: ${highestBid.amount.toFixed(2)}</small>
+                      <small>თქვენი გამარჯვებული ბიდი: ${highestBid.amount.toFixed(2)}</small>
                     </Alert>
                   );
                 } else if (isWinning && car.status === 'Sold') {
                   return (
                     <Alert variant="success" className="mb-3">
                       <i className="bi bi-trophy me-2"></i>
-                      <strong>Congratulations! You won this auction!</strong>
+                      <strong>გილოცავთ! თქვენ მოიგეთ ეს აუქციონი!</strong>
                       <br />
-                      <small>Winning bid: ${highestBid.amount.toFixed(2)}</small>
+                      <small>გამარჯვებული ბიდი: ${highestBid.amount.toFixed(2)}</small>
                     </Alert>
                   );
                 }
@@ -627,7 +627,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             
             {car.status === 'OngoingAuction' && (
               <div className="mb-2">
-                <strong>Time Left:</strong>{' '}
+                <strong>დარჩენილი დრო:</strong>{' '}
                 <span 
                   className={`fw-bold ${
                     timeRemainingSeconds <= 5 && timeRemainingSeconds > 0 
@@ -647,7 +647,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
                   <div className="mt-1">
                     <small className="text-danger fw-bold">
                       <i className="bi bi-exclamation-triangle me-1"></i>
-                      FINAL SECONDS!
+                      ბოლო წამები!
                     </small>
                   </div>
                 )}
@@ -656,11 +656,11 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             
             {car.status === 'UpcomingAuction' && (
               <div className="mb-2">
-                <strong>Starts In:</strong>{' '}
+                <strong>იწყება:</strong>{' '}
                 <span className="text-primary fw-bold">{startTimeRemaining}</span>
                 <div className="mt-1">
                   <small className="text-muted">
-                    Note: Auction status will automatically update when the start time is reached.
+                    შენიშვნა: აუქციონის სტატუსი ავტომატურად განახლდება დაწყების დროის მისაღწევად.
                   </small>
                 </div>
               </div>
@@ -668,7 +668,7 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             
             <div className="mt-3">
               <small className="text-muted">
-                Bids are binding contracts. By placing a bid, you agree to purchase the vehicle if you are the winning bidder.
+                ბიდები მავალი ხელშეკრულებებია. ბიდის განთავსებით თქვენ ეთანხმებით მანქანის შეძენას, თუ იქნებით გამარჯვებული ბიდერი.
               </small>
             </div>
           </Card.Body>
@@ -680,12 +680,12 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
     {car && (
       <Modal show={showOrderModal} onHide={handleCloseOrderModal} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Complete Your Purchase</Modal.Title>
+          <Modal.Title>თქვენი შეძენის დასრულება</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div className="mb-3">
             <h5>{car.name} {car.model} ({car.year})</h5>
-            <p className="text-muted">Price: ${car.fixedPrice?.toFixed(2)}</p>
+            <p className="text-muted">ფასი: ${car.fixedPrice?.toFixed(2)}</p>
           </div>
           
           {orderError && <Alert variant="danger">{orderError}</Alert>}
@@ -694,78 +694,78 @@ const CarDetails: React.FC<CarDetailsProps> = ({ user }) => {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="personalNumber">
-                  <Form.Label>Personal Number <span className="text-danger">*</span></Form.Label>
+                  <Form.Label>პირადი ნომერი <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     type="text"
                     name="personalNumber"
                     value={orderData.personalNumber}
                     onChange={handleOrderDataChange}
                     required
-                    placeholder="Enter your personal number"
+                    placeholder="შეიყვანეთ თქვენი პირადი ნომერი"
                   />
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3" controlId="mobile">
-                  <Form.Label>Mobile Number <span className="text-danger">*</span></Form.Label>
+                  <Form.Label>მობილურის ნომერი <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     type="tel"
                     name="mobile"
                     value={orderData.mobile}
                     onChange={handleOrderDataChange}
                     required
-                    placeholder="Enter your mobile number"
+                    placeholder="შეიყვანეთ თქვენი მობილურის ნომერი"
                   />
                 </Form.Group>
               </Col>
             </Row>
             
             <Form.Group className="mb-3" controlId="email">
-              <Form.Label>Email <span className="text-danger">*</span></Form.Label>
+              <Form.Label>ელ-ფოსტა <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="email"
                 name="email"
                 value={orderData.email}
                 onChange={handleOrderDataChange}
                 required
-                placeholder="Enter your email address"
+                placeholder="შეიყვანეთ თქვენი ელ-ფოსტის მისამართი"
               />
             </Form.Group>
             
             <Form.Group className="mb-3" controlId="address">
-              <Form.Label>Address</Form.Label>
+              <Form.Label>მისამართი</Form.Label>
               <Form.Control
                 type="text"
                 name="address"
                 value={orderData.address}
                 onChange={handleOrderDataChange}
-                placeholder="Enter your address (optional)"
+                placeholder="შეიყვანეთ თქვენი მისამართი (არასავალდებულო)"
               />
             </Form.Group>
             
             <Form.Group className="mb-3" controlId="notes">
-              <Form.Label>Notes</Form.Label>
+              <Form.Label>შენიშვნები</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
                 name="notes"
                 value={orderData.notes}
                 onChange={handleOrderDataChange}
-                placeholder="Any additional notes (optional)"
+                placeholder="ნებისმიერი დამატებითი შენიშვნები (არასავალდებულო)"
               />
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseOrderModal}>
-            Cancel
+            გაუქმება
           </Button>
           <Button 
             variant="success" 
             onClick={handleOrderSubmit}
             disabled={orderLoading}
           >
-            {orderLoading ? 'Processing...' : `Buy for $${car.fixedPrice?.toFixed(2)}`}
+            {orderLoading ? 'მუშავდება...' : `შეძენა $${car.fixedPrice?.toFixed(2)}-ად`}
           </Button>
         </Modal.Footer>
       </Modal>

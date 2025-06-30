@@ -150,8 +150,20 @@ const Home: React.FC = () => {
   };
 
   const formatStatus = (status: string) => {
-    // Convert camel case to spaces
-    return status.replace(/([A-Z])/g, ' $1').trim();
+    switch (status) {
+      case 'UpcomingAuction':
+        return 'მოახლოებული აუქციონი';
+      case 'OngoingAuction':
+        return 'მიმდინარე აუქციონი';
+      case 'Sold':
+        return 'გაყიდული';
+      case 'PendingApproval':
+        return 'დამტკიცების მოლოდინში';
+      case 'DirectSale':
+        return 'პირდაპირი გაყიდვა';
+      default:
+        return status;
+    }
   };
   
   const getCarMainImage = (car: Car) => {
