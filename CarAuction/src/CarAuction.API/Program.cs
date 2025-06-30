@@ -97,7 +97,27 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     if (connectionString?.Contains("postgresql://") == true || connectionString?.Contains("postgres://") == true)
     {
         Console.WriteLine("Using PostgreSQL (Npgsql)");
-        options.UseNpgsql(connectionString);
+        
+        // Convert URI format to Npgsql connection string format
+        try
+        {
+            var uri = new Uri(connectionString);
+            var userInfo = uri.UserInfo.Split(':');
+            var username = userInfo[0];
+            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+            
+            var npgsqlConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+            
+            Console.WriteLine($"Converted to Npgsql format (masked): Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={username};Password=***;SSL Mode=Require;Trust Server Certificate=true");
+            
+            options.UseNpgsql(npgsqlConnectionString);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error converting connection string: {ex.Message}");
+            // Fallback to original connection string
+            options.UseNpgsql(connectionString);
+        }
     }
     else
     {
