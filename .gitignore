@@ -24,3 +24,4 @@ CarAuction/src/carauction.web/coverage/
 
 # Exclude development builds but keep deployment package
 CarAuction/src/CarAuction.API/publish/
+.vs/
